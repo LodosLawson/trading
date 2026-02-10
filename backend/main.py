@@ -9,8 +9,8 @@ app = FastAPI(title="AI-Native Financial Ecosystem API")
 
 # CORS Setup
 origins = [
-    "http://localhost:3000",  # Next.js frontend
-    "http://127.0.0.1:3000",
+    "http://localhost:4044",  # Next.js frontend
+    "http://127.0.0.1:4044",
     "https://dancing-meringue-05ad28.netlify.app", # Netlify production
     "*", # Allow all for development flexibility
 ]

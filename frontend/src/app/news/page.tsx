@@ -33,15 +33,24 @@ export default function NewsPage() {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
                 console.log("Fetching news from:", apiUrl);
                 const [newsRes, summaryRes] = await Promise.all([
-                    fetch(`${apiUrl}/api/news`),
-                    fetch(`${apiUrl}/api/news/summary`)
+                    fetch(`${apiUrl}/api/news`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+                    fetch(`${apiUrl}/api/news/summary`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
                 ]);
+
+                if (!newsRes.ok || !summaryRes.ok) {
+                    throw new Error(`HTTP error! status: ${newsRes.status} / ${summaryRes.status}`);
+                }
 
                 const newsData = await newsRes.json();
                 const summaryData = await summaryRes.json();
 
-                setNews(newsData);
-                setSummary(summaryData);
+                setNews(newsData || []);
+                // Ensure summary has required fields before setting
+                if (summaryData && summaryData.sentiment) {
+                    setSummary(summaryData);
+                } else {
+                    setSummary(null);
+                }
             } catch (error) {
                 console.error('Failed to fetch data:', error);
             } finally {

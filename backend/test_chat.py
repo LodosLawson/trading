@@ -8,14 +8,14 @@ import urllib.error
 def test_chat():
     # Health Check first
     try:
-        with urllib.request.urlopen("http://localhost:8000/health") as res:
+        with urllib.request.urlopen("http://localhost:4044/health") as res:
              print(f"Health Check: {res.status}")
     except Exception as e:
         print(f"Health Check Failed: {e}")
         return
 
     print("--- Testing Chat Widget API ---")
-    url = "http://localhost:8000/api/ai/chat"
+    url = "http://localhost:4044/api/ai/chat"
     payload = {"message": "Is the market bullish today?"}
     data = json.dumps(payload).encode('utf-8')
     
