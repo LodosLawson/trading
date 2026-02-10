@@ -69,6 +69,11 @@ export default function Home() {
                 <span className="relative z-10 font-bold tracking-wider text-sm">CRYPTO PRICES</span>
                 <span className="relative z-10 group-hover:translate-x-1 transition-transform">&rarr;</span>
               </Link>
+
+              <Link href="/chat" className="group relative inline-flex items-center gap-3 px-8 py-4 border border-blue-500/30 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-500 overflow-hidden w-full sm:w-auto justify-center">
+                <span className="relative z-10 font-bold tracking-wider text-sm">AI TERMINAL</span>
+                <span className="relative z-10 group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </Link>
             </div>
           </motion.div>
         </main>
