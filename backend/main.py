@@ -11,6 +11,8 @@ app = FastAPI(title="AI-Native Financial Ecosystem API")
 origins = [
     "http://localhost:3000",  # Next.js frontend
     "http://127.0.0.1:3000",
+    "https://dancing-meringue-05ad28.netlify.app", # Netlify production
+    "*", # Allow all for development flexibility
 ]
 
 app.add_middleware(
