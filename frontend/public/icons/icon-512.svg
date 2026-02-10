@@ -1,6 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#0a0a0f"/>
-  <path d="M 80 290 L 145 290 L 185 160 L 225 340 L 265 210 L 305 265 L 345 135 L 385 250 L 432 250" 
-        fill="none" stroke="#3b82f6" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="345" cy="135" r="10" fill="#3b82f6"/>
+  <rect width="512" height="512" rx="64" fill="#0a0a0f"/>
+  <rect x="8" y="8" width="496" height="496" rx="56" fill="none" stroke="#1e293b" stroke-width="2"/>
+  <path d="M 70 310 L 120 310 L 150 190 L 190 340 L 230 220 L 270 280 L 310 120 L 350 240 L 400 160 L 440 210"
+        fill="none" stroke="url(#g1)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="440" cy="210" r="12" fill="#818cf8"/>
+  <circle cx="440" cy="210" r="20" fill="#818cf8" opacity="0.2"/>
+  <text x="256" y="420" text-anchor="middle" fill="#4b5563" font-family="Arial, sans-serif" font-size="28" font-weight="bold" letter-spacing="8">LOCKTRACE</text>
+  <text x="256" y="450" text-anchor="middle" fill="#374151" font-family="Arial, sans-serif" font-size="14" letter-spacing="4">MARKETPULSE</text>
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+  </defs>
 </svg>

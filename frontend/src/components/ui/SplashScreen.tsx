@@ -231,6 +231,14 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
                                 >
                                     AI-Native Financial Intelligence
                                 </motion.p>
+                                <motion.p
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.6 }}
+                                    className="text-[9px] text-gray-700 uppercase tracking-[0.4em] mt-4"
+                                >
+                                    Powered by <span className="text-gray-500 font-bold">LockTrace</span>
+                                </motion.p>
                             </motion.div>
                         )}
                     </AnimatePresence>

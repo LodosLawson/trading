@@ -1,7 +1,7 @@
 {
-    "name": "MarketPulse - AI Financial Intelligence",
+    "name": "MarketPulse by LockTrace",
     "short_name": "MarketPulse",
-    "description": "AI-Native Financial Intelligence Platform",
+    "description": "AI-Native Financial Intelligence Platform — Powered by LockTrace",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0a0a0f",
@@ -10,15 +10,27 @@
     "icons": [
         {
             "src": "/icons/icon-192.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-512.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-192.svg",
             "sizes": "192x192",
             "type": "image/svg+xml",
-            "purpose": "any maskable"
+            "purpose": "maskable"
         },
         {
             "src": "/icons/icon-512.svg",
             "sizes": "512x512",
             "type": "image/svg+xml",
-            "purpose": "any maskable"
+            "purpose": "maskable"
         }
     ]
 }

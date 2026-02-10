@@ -46,6 +46,9 @@ export default function Home() {
             <p className="text-gray-500 text-sm sm:text-lg md:text-xl uppercase tracking-[0.2em] font-light">
               AI-Native Financial Intelligence
             </p>
+            <p className="text-gray-700 text-[10px] sm:text-xs uppercase tracking-[0.3em] mt-2">
+              Powered by <span className="text-gray-500 font-bold">LockTrace</span>
+            </p>
           </motion.div>
 
           <motion.div
@@ -78,8 +81,13 @@ export default function Home() {
           </motion.div>
         </main>
 
-        <footer className="absolute bottom-6 sm:bottom-8 text-[10px] sm:text-xs text-gray-700 uppercase tracking-widest">
-          Status: <span className="text-emerald-500">Operational</span> • v0.3.0
+        <footer className="absolute bottom-6 sm:bottom-8 text-center">
+          <p className="text-[10px] sm:text-xs text-gray-700 uppercase tracking-widest">
+            Status: <span className="text-emerald-500">Operational</span> • v0.3.0
+          </p>
+          <p className="text-[9px] text-gray-800 uppercase tracking-widest mt-1">
+            Developed by <span className="text-gray-600">LockTrace</span> • © {new Date().getFullYear()}
+          </p>
         </footer>
       </div>
     </>
