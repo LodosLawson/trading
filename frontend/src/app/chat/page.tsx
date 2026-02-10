@@ -314,7 +314,7 @@ export default function ChatPage() {
             {/* ── Header ─── */}
             <header className="shrink-0 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/5 px-4 py-2.5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <Link href="/" className="text-gray-600 hover:text-white transition-colors text-xs">&larr;</Link>
+                    <Link href="/terminal" className="text-gray-600 hover:text-white transition-colors text-xs">&larr;</Link>
                     <h1 className="text-base font-thin tracking-tight">
                         MARKET<span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-500">MIND</span>
                     </h1>

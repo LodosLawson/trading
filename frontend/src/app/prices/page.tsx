@@ -180,7 +180,7 @@ export default function PricesPage() {
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 sm:py-4">
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 sm:gap-6 min-w-0">
-                            <Link href="/" className="text-gray-500 hover:text-white transition-colors text-xs uppercase tracking-widest shrink-0">
+                            <Link href="/terminal" className="text-gray-500 hover:text-white transition-colors text-xs uppercase tracking-widest shrink-0">
                                 &larr;
                             </Link>
                             <h1 className="text-lg sm:text-xl font-thin tracking-tight truncate">

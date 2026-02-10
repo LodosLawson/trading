@@ -344,7 +344,7 @@ Mentioned currencies: ${item.currencies.map(c => c.code).join(', ') || 'None spe
             <header className="sticky top-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/5">
                 <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <Link href="/" className="text-gray-600 hover:text-white transition-colors text-xs">
+                        <Link href="/terminal" className="text-gray-600 hover:text-white transition-colors text-xs">
                             &larr;
                         </Link>
                         <h1 className="text-lg font-thin tracking-tight">

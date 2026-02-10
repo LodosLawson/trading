@@ -61,21 +61,11 @@ export default function Home() {
               Experience the future of trading. Real-time news analysis, semantic impact scoring, and autonomous agentic insights.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Link href="/news" className="group relative inline-flex items-center gap-3 px-8 py-4 bg-white text-black hover:bg-blue-500 hover:text-white transition-all duration-500 overflow-hidden w-full sm:w-auto justify-center">
+            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center">
+              <Link href="/terminal" className="group relative inline-flex items-center gap-3 px-8 py-4 bg-white text-black hover:bg-blue-500 hover:text-white transition-all duration-500 overflow-hidden w-full sm:w-auto justify-center rounded-full">
                 <span className="relative z-10 font-bold tracking-wider text-sm">ENTER TERMINAL</span>
                 <span className="relative z-10 group-hover:translate-x-1 transition-transform">&rarr;</span>
-                <div className="absolute inset-0 bg-gray-200 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></div>
-              </Link>
-
-              <Link href="/prices" className="group relative inline-flex items-center gap-3 px-8 py-4 border border-white/20 text-white hover:bg-violet-600 hover:border-violet-600 transition-all duration-500 overflow-hidden w-full sm:w-auto justify-center">
-                <span className="relative z-10 font-bold tracking-wider text-sm">CRYPTO PRICES</span>
-                <span className="relative z-10 group-hover:translate-x-1 transition-transform">&rarr;</span>
-              </Link>
-
-              <Link href="/chat" className="group relative inline-flex items-center gap-3 px-8 py-4 border border-blue-500/30 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-500 overflow-hidden w-full sm:w-auto justify-center">
-                <span className="relative z-10 font-bold tracking-wider text-sm">AI TERMINAL</span>
-                <span className="relative z-10 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                <div className="absolute inset-0 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></div>
               </Link>
             </div>
           </motion.div>
