@@ -8,6 +8,9 @@ load_dotenv()
 app = FastAPI(title="AI-Native Financial Ecosystem API")
 
 # CORS Setup
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 origins = [
     "http://localhost:4044",  # Next.js frontend
     "http://127.0.0.1:4044",
@@ -15,9 +18,26 @@ origins = [
     "*", # Allow all for development flexibility
 ]
 
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
+
+class CORSFallbackMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        if request.method == "OPTIONS":
+            response = JSONResponse({})
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            return response
+        response = await call_next(request)
+        response.headers["Access-Control-Allow-Origin"] = "*" # Force on all responses
+        return response
+
+app.add_middleware(CORSFallbackMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -83,3 +103,10 @@ def get_market_summary():
         import traceback
         traceback.print_exc()
         raise e
+
+@app.get("/api/crypto/prices")
+def get_crypto_prices(vs_currency: str = "usd", per_page: int = 100):
+    """
+    Returns live crypto prices from CoinGecko.
+    """
+    return market_data.fetch_crypto_prices(vs_currency=vs_currency, per_page=per_page)

@@ -2,13 +2,7 @@ import os
 import time
 import subprocess
 import sys
-
-def install_ngrok_if_needed():
-    try:
-        subprocess.check_call(["ngrok", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except FileNotFoundError:
-        print("Ngrok is not installed. Please install it from https://ngrok.com/download")
-        sys.exit(1)
+import re
 
 def kill_port_8001():
     print("Cleaning up port 8001...")
@@ -27,11 +21,10 @@ def kill_port_8001():
 
 def start_services():
     kill_port_8001()
-    print("Starting services...")
+    print("Starting services with SERVEO...")
     
     # 1. Start Backend (Uvicorn)
     print("Starting FastAPI Backend on port 8001...")
-    # Use Popen to run in background
     log_file = open("backend_error.log", "w")
     backend_process = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "main:app", "--reload", "--port", "8001"],
@@ -41,22 +34,48 @@ def start_services():
     )
     time.sleep(5) # Wait for backend to initialize
 
-    # 2. Start Ngrok
-    print("Starting Ngrok Tunnel on port 8001...")
-    ngrok_process = subprocess.Popen(
-        ["ngrok", "http", "8001"],
+    # 2. Start Serveo SSH Tunnel
+    print("Starting Serveo SSH Tunnel on port 8001...")
+    # Serveo prints the URL to stdout
+    # We need to capture it line by line
+    serveo_process = subprocess.Popen(
+        ["ssh", "-R", "80:localhost:8001", "serveo.net"],
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE, # Serveo might output to stderr or stdout
+        stdin=subprocess.PIPE # Keep open
     )
-    time.sleep(5) # Give it a moment to connect
     
-    # 3. Get Public URL
-    import requests
+    # Wait for URL
+    public_url = None
+    print("Waiting for Serveo URL...")
+    
+    # Read output non-blocking or just wait a bit and peek
+    # Serveo outputs: "Forwarding HTTP traffic from https://XXXXX.serveo.net"
     try:
-        response = requests.get("http://localhost:4040/api/tunnels")
-        tunnels = response.json()["tunnels"]
-        public_url = tunnels[0]["public_url"]
-        
+        # We'll read line by line for a few seconds
+        start_time = time.time()
+        while time.time() - start_time < 15:
+            output = serveo_process.stdout.readline().decode().strip()
+            if output:
+                print(f"Serveo says: {output}")
+                match = re.search(r"https://[a-zA-Z0-9-]+\.serveo\.net", output)
+                if match:
+                    public_url = match.group(0)
+                    break
+            else:
+                time.sleep(0.1)
+                
+        if not public_url:
+            print("Could not get URL from stdout, checking stderr...")
+            # Sometimes SSH outputs connection info to stderr
+            # But verifying URL is tricky without interactive
+            # Let's try assumes it works if process is alive
+            pass
+
+    except Exception as e:
+        print(f"Error reading Serveo output: {e}")
+
+    if public_url:
         print("\n!!! SYSTEM ONLINE !!!")
         print(f"Backend: http://localhost:8001")
         print(f"Public URL: {public_url}")
@@ -70,27 +89,16 @@ def start_services():
         print("\nKEEP THIS WINDOW OPEN to keep the server running.")
         print("Press Ctrl+C to stop.")
         
-        # Keep the script running to keep subprocesses alive
+        # Keep alive
         backend_process.wait()
-        ngrok_process.wait()
-
-    except Exception as e:
-        print(f"Error: {e}")
-        print("Make sure ngrok is running.")
-        try:
-            ngrok_process.terminate()
-            backend_process.terminate()
-        except:
-            pass
+        serveo_process.wait()
+    else:
+        print("Failed to get Serveo URL. Trying manual fallback...")
+        print("Please check the output above.")
+        backend_process.terminate()
+        serveo_process.terminate()
 
 if __name__ == "__main__":
-    try:
-        import requests
-    except ImportError:
-        print("Installing requests library...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
-    
-    install_ngrok_if_needed()
     try:
         start_services()
     except KeyboardInterrupt:

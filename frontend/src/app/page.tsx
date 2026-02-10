@@ -40,11 +40,18 @@ export default function Home() {
             Experience the future of trading. Real-time news analysis, semantic impact scoring, and autonomous agentic insights.
           </p>
 
-          <Link href="/news" className="group relative inline-flex items-center gap-3 px-8 py-4 bg-white text-black hover:bg-blue-500 hover:text-white transition-all duration-500 rounded-none overflow-hidden">
-            <span className="relative z-10 font-bold tracking-wider text-sm">ENTER TERMINAL</span>
-            <span className="relative z-10 group-hover:translate-x-1 transition-transform">→</span>
-            <div className="absolute inset-0 bg-gray-200 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></div>
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <Link href="/news" className="group relative inline-flex items-center gap-3 px-8 py-4 bg-white text-black hover:bg-blue-500 hover:text-white transition-all duration-500 rounded-none overflow-hidden">
+              <span className="relative z-10 font-bold tracking-wider text-sm">ENTER TERMINAL</span>
+              <span className="relative z-10 group-hover:translate-x-1 transition-transform">&rarr;</span>
+              <div className="absolute inset-0 bg-gray-200 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></div>
+            </Link>
+
+            <Link href="/prices" className="group relative inline-flex items-center gap-3 px-8 py-4 border border-white/20 text-white hover:bg-violet-600 hover:border-violet-600 transition-all duration-500 rounded-none overflow-hidden">
+              <span className="relative z-10 font-bold tracking-wider text-sm">CRYPTO PRICES</span>
+              <span className="relative z-10 group-hover:translate-x-1 transition-transform">&rarr;</span>
+            </Link>
+          </div>
         </motion.div>
       </main>
 

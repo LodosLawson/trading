@@ -29,12 +29,10 @@ export default function NewsPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Parallel Fetch
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                console.log("Fetching news from:", apiUrl);
+                // Use Next.js API routes (no external backend needed)
                 const [newsRes, summaryRes] = await Promise.all([
-                    fetch(`${apiUrl}/api/news`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
-                    fetch(`${apiUrl}/api/news/summary`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
+                    fetch('/api/news'),
+                    fetch('/api/summary')
                 ]);
 
                 if (!newsRes.ok || !summaryRes.ok) {
