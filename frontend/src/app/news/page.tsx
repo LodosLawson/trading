@@ -1,19 +1,18 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import ChatWidget from '@/components/ui/ChatWidget';
 
-interface NewsItem {
+/* ── Types ───────────────────────────────────────── */
+interface CryptoNewsItem {
     title: string;
-    link: string;
+    body: string;
+    url: string;
     source: string;
     published_at: string;
-    snippet?: string;
-    impact_score?: number;
-    reasoning?: string;
-    affected_assets?: string[];
+    currencies: Array<{ code: string; title: string }>;
 }
 
 interface MarketSummary {
@@ -22,64 +21,238 @@ interface MarketSummary {
     takeaways: string[];
 }
 
-/* ── AI Analysis State per card ──────────────────── */
-interface AnalysisState {
+interface AIAnalysis {
     loading: boolean;
     result: string | null;
+    symbols: string[];
 }
 
+interface SymbolPrice {
+    id: string;
+    symbol: string;
+    name: string;
+    image: string;
+    current_price: number;
+    price_change_percentage_24h: number;
+    sparkline_7d: number[];
+}
+
+/* ── Sparkline ───────────────────────────────────── */
+function MiniChart({ data, color, w = 80, h = 28 }: { data: number[]; color: string; w?: number; h?: number }) {
+    if (!data || data.length < 2) return null;
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min || 1;
+
+    const points = data.map((val, i) => {
+        const x = (i / (data.length - 1)) * w;
+        const y = 2 + (h - 4) - ((val - min) / range) * (h - 4);
+        return `${x},${y}`;
+    }).join(' ');
+
+    const gradId = `g-${color.replace('#', '')}-${w}`;
+    return (
+        <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+            <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+                    <stop offset="100%" stopColor={color} stopOpacity="0" />
+                </linearGradient>
+            </defs>
+            <polygon fill={`url(#${gradId})`} points={`0,${h} ${points} ${w},${h}`} />
+            <polyline fill="none" stroke={color} strokeWidth="1.5" points={points} />
+        </svg>
+    );
+}
+
+/* ── Symbol Chip with Price ──────────────────────── */
+function SymbolChip({ symbol, priceData, onTap }: {
+    symbol: string;
+    priceData: SymbolPrice | null;
+    onTap: (symbol: string) => void;
+}) {
+    if (!priceData) {
+        return (
+            <span className="px-2 py-1 bg-white/5 text-gray-500 text-[10px] font-mono rounded border border-white/5">
+                {symbol}
+            </span>
+        );
+    }
+
+    const isUp = priceData.price_change_percentage_24h >= 0;
+    const color = isUp ? '#34d399' : '#f87171';
+
+    return (
+        <button
+            onClick={() => onTap(symbol)}
+            className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 rounded-lg transition-all active:scale-95 group"
+        >
+            {priceData.image && (
+                <img src={priceData.image} alt="" className="w-4 h-4 rounded-full" />
+            )}
+            <span className="text-[11px] font-mono font-medium text-gray-300 group-hover:text-white">{symbol}</span>
+            <span className={`text-[10px] font-mono ${isUp ? 'text-emerald-400' : 'text-red-400'}`}>
+                {isUp ? '▲' : '▼'}{Math.abs(priceData.price_change_percentage_24h).toFixed(1)}%
+            </span>
+            <MiniChart data={priceData.sparkline_7d} color={color} w={40} h={16} />
+        </button>
+    );
+}
+
+/* ── Symbol Detail Modal ─────────────────────────── */
+function SymbolDetail({ symbol, priceData, onClose }: {
+    symbol: string;
+    priceData: SymbolPrice | null;
+    onClose: () => void;
+}) {
+    if (!priceData) return null;
+    const isUp = priceData.price_change_percentage_24h >= 0;
+    const color = isUp ? '#34d399' : '#f87171';
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ y: 100 }}
+                animate={{ y: 0 }}
+                exit={{ y: 100 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-[#111118] border border-white/10 rounded-t-2xl sm:rounded-2xl w-full sm:w-96 max-h-[80vh] overflow-auto"
+            >
+                <div className="p-5">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <img src={priceData.image} alt="" className="w-10 h-10 rounded-full" />
+                            <div>
+                                <div className="font-medium text-white">{priceData.name}</div>
+                                <div className="text-xs text-gray-500 font-mono">{symbol}</div>
+                            </div>
+                        </div>
+                        <button onClick={onClose} className="text-gray-600 hover:text-white text-xl">&times;</button>
+                    </div>
+
+                    {/* Price */}
+                    <div className="mb-4">
+                        <div className="text-2xl font-mono tabular-nums text-white">
+                            ${priceData.current_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: priceData.current_price < 1 ? 6 : 2 })}
+                        </div>
+                        <span className={`text-sm font-mono ${isUp ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {isUp ? '▲' : '▼'} {Math.abs(priceData.price_change_percentage_24h).toFixed(2)}% (24h)
+                        </span>
+                    </div>
+
+                    {/* Large Chart */}
+                    <div className="bg-white/[0.02] rounded-xl p-3 mb-4">
+                        <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2">7-Day Chart</div>
+                        <MiniChart data={priceData.sparkline_7d} color={color} w={320} h={120} />
+                    </div>
+
+                    {/* Link to full page */}
+                    <Link
+                        href="/prices"
+                        className="block text-center text-xs text-blue-400 hover:text-blue-300 py-2 border border-blue-500/20 rounded-lg hover:bg-blue-500/5 transition-all"
+                    >
+                        View All Markets →
+                    </Link>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+}
+
+/* ── Main Page ───────────────────────────────────── */
 export default function NewsPage() {
-    const [news, setNews] = useState<NewsItem[]>([]);
+    const [news, setNews] = useState<CryptoNewsItem[]>([]);
     const [summary, setSummary] = useState<MarketSummary | null>(null);
     const [loading, setLoading] = useState(true);
-    const [analyses, setAnalyses] = useState<Record<number, AnalysisState>>({});
+    const [analyses, setAnalyses] = useState<Record<number, AIAnalysis>>({});
+    const [priceMap, setPriceMap] = useState<Record<string, SymbolPrice>>({});
+    const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
 
+    // Fetch crypto news + summary
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const [newsRes, summaryRes] = await Promise.all([
-                    fetch('/api/news'),
+                    fetch('/api/crypto-news'),
                     fetch('/api/summary')
                 ]);
 
-                if (!newsRes.ok || !summaryRes.ok) {
-                    throw new Error(`HTTP error! status: ${newsRes.status} / ${summaryRes.status}`);
-                }
-
-                const newsData = await newsRes.json();
-                const summaryData = await summaryRes.json();
+                const newsData = newsRes.ok ? await newsRes.json() : [];
+                const summaryData = summaryRes.ok ? await summaryRes.json() : null;
 
                 setNews(newsData || []);
-                if (summaryData && summaryData.sentiment) {
-                    setSummary(summaryData);
-                } else {
-                    setSummary(null);
-                }
+                if (summaryData?.sentiment) setSummary(summaryData);
             } catch (error) {
-                console.error('Failed to fetch data:', error);
+                console.error('Failed to fetch:', error);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchData();
     }, []);
 
-    const analyzeArticle = async (index: number, title: string) => {
-        setAnalyses(prev => ({ ...prev, [index]: { loading: true, result: null } }));
+    // Fetch prices for all mentioned symbols
+    const fetchPricesForSymbols = useCallback(async () => {
+        try {
+            const res = await fetch('/api/crypto?per_page=100');
+            if (!res.ok) return;
+            const coins: SymbolPrice[] = await res.json();
+            const map: Record<string, SymbolPrice> = {};
+            for (const c of coins) {
+                map[c.symbol.toUpperCase()] = c;
+            }
+            setPriceMap(map);
+        } catch { /* silent */ }
+    }, []);
+
+    useEffect(() => {
+        fetchPricesForSymbols();
+    }, [fetchPricesForSymbols]);
+
+    // Auto-analyze a news article
+    const analyzeArticle = async (index: number, item: CryptoNewsItem) => {
+        setAnalyses(prev => ({ ...prev, [index]: { loading: true, result: null, symbols: [] } }));
 
         try {
+            const prompt = `Analyze this crypto news for trading impact. Output format:
+1. Brief analysis (2-3 sentences max)
+2. Sentiment score: -10 to +10
+3. Affected symbols: comma-separated (e.g. BTC, ETH, SOL)
+
+News Title: "${item.title}"
+Content: "${item.body}"
+Mentioned currencies: ${item.currencies.map(c => c.code).join(', ') || 'None specified'}`;
+
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: `Analyze this news headline for trading impact. Be concise (max 3 sentences). Include sentiment score (-10 to +10) and affected assets:\n\n"${title}"`
-                }),
+                body: JSON.stringify({ message: prompt }),
             });
             const data = await res.json();
-            setAnalyses(prev => ({ ...prev, [index]: { loading: false, result: data.reply } }));
+            const reply = data.reply || '';
+
+            // Extract symbols from AI response or from article currencies
+            const articleSymbols = item.currencies.map(c => c.code.toUpperCase());
+            const symbolRegex = /\b(BTC|ETH|SOL|BNB|XRP|ADA|DOGE|DOT|AVAX|MATIC|LINK|UNI|ATOM|LTC|NEAR|APT|ARB|OP|SUI|SEI|TIA|JUP|WIF|PEPE|SHIB|BONK)\b/gi;
+            const aiSymbols: string[] = (reply.match(symbolRegex) || []).map((s: string) => s.toUpperCase());
+            const allSymbols: string[] = [...new Set<string>([...articleSymbols, ...aiSymbols])];
+
+            setAnalyses(prev => ({
+                ...prev,
+                [index]: { loading: false, result: reply, symbols: allSymbols }
+            }));
         } catch {
-            setAnalyses(prev => ({ ...prev, [index]: { loading: false, result: 'Analysis failed. Try again.' } }));
+            setAnalyses(prev => ({
+                ...prev,
+                [index]: { loading: false, result: 'Analysis unavailable.', symbols: item.currencies.map(c => c.code.toUpperCase()) }
+            }));
         }
     };
 
@@ -90,10 +263,23 @@ export default function NewsPage() {
         return 'text-gray-400';
     };
 
-    const signalBg = (s: string) => {
+    const signalStyle = (s: string) => {
         if (s === 'Buy Dip') return 'bg-emerald-900/30 text-emerald-300 border-emerald-800';
         if (s === 'Sell Rallies') return 'bg-red-900/30 text-red-300 border-red-800';
         return 'bg-blue-900/30 text-blue-300 border-blue-800';
+    };
+
+    const timeAgo = (dateStr: string) => {
+        try {
+            const diff = Date.now() - new Date(dateStr).getTime();
+            const mins = Math.floor(diff / 60000);
+            if (mins < 60) return `${mins}m ago`;
+            const hrs = Math.floor(mins / 60);
+            if (hrs < 24) return `${hrs}h ago`;
+            return `${Math.floor(hrs / 24)}d ago`;
+        } catch {
+            return 'Just Now';
+        }
     };
 
     return (
@@ -101,41 +287,47 @@ export default function NewsPage() {
 
             {/* ── Header ─── */}
             <header className="sticky top-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/5">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3 sm:gap-6">
-                        <Link href="/" className="text-gray-500 hover:text-white transition-colors text-xs uppercase tracking-widest">
+                <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Link href="/" className="text-gray-600 hover:text-white transition-colors text-xs">
                             &larr;
                         </Link>
-                        <h1 className="text-lg sm:text-xl font-thin tracking-tight">
-                            MARKET<span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">PULSE</span>
+                        <h1 className="text-lg font-thin tracking-tight">
+                            CRYPTO<span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">NEWS</span>
                         </h1>
                     </div>
-                    <span className="text-[10px] text-gray-600 uppercase tracking-widest hidden sm:block">Live Feed / AI Enhanced</span>
+                    <div className="flex items-center gap-2">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span className="text-[10px] text-gray-600 uppercase tracking-widest">Live</span>
+                    </div>
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+            <main className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
 
                 {/* ── Market Summary ─── */}
                 {summary && (
                     <motion.div
-                        initial={{ opacity: 0, y: -10 }}
+                        initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-8 bg-white/[0.03] border border-white/5 rounded-xl p-4 sm:p-6"
+                        className="mb-6 bg-white/[0.02] border border-white/5 rounded-xl p-4"
                     >
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
-                            <h2 className="text-base sm:text-lg font-light">
-                                Market Pulse: <span className={`font-bold ${sentimentColor(summary.sentiment)}`}>{summary.sentiment.toUpperCase()}</span>
-                            </h2>
-                            <span className={`px-3 py-1 text-[10px] font-bold rounded-full border ${signalBg(summary.signal)}`}>
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-light">
+                                Pulse: <span className={`font-bold ${sentimentColor(summary.sentiment)}`}>{summary.sentiment}</span>
+                            </span>
+                            <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${signalStyle(summary.signal)}`}>
                                 {summary.signal.toUpperCase()}
                             </span>
                         </div>
-                        <ul className="space-y-2">
-                            {summary.takeaways.map((point, i) => (
-                                <li key={i} className="text-xs sm:text-sm text-gray-400 flex items-start gap-2">
-                                    <span className="text-blue-500 mt-0.5 shrink-0">›</span>
-                                    <span>{point}</span>
+                        <ul className="space-y-1.5">
+                            {summary.takeaways.map((t, i) => (
+                                <li key={i} className="text-xs text-gray-500 flex items-start gap-2">
+                                    <span className="text-blue-500 mt-0.5">›</span>
+                                    <span>{t}</span>
                                 </li>
                             ))}
                         </ul>
@@ -144,88 +336,92 @@ export default function NewsPage() {
 
                 {/* ── Loading ─── */}
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center h-64 gap-4">
+                    <div className="flex flex-col items-center justify-center h-64 gap-3">
                         <div className="relative w-10 h-10">
                             <div className="absolute inset-0 rounded-full border-t-2 border-blue-500 animate-spin"></div>
                             <div className="absolute inset-1.5 rounded-full border-t-2 border-violet-500 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }}></div>
                         </div>
-                        <p className="text-[10px] text-gray-600 animate-pulse uppercase tracking-widest">Analyzing Market Data</p>
+                        <p className="text-[10px] text-gray-600 animate-pulse uppercase tracking-widest">Loading Crypto News</p>
                     </div>
                 ) : (
                     /* ── News Cards ─── */
                     <div className="space-y-4">
                         {news.map((item, index) => {
                             const analysis = analyses[index];
+                            const hasAnalysis = analysis?.result;
+                            const symbols = analysis?.symbols || item.currencies.map(c => c.code.toUpperCase());
 
                             return (
                                 <motion.div
                                     key={index}
-                                    initial={{ opacity: 0, y: 12 }}
+                                    initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: Math.min(index * 0.06, 0.5) }}
+                                    transition={{ delay: Math.min(index * 0.05, 0.4) }}
                                     className="bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden hover:border-white/10 transition-colors"
                                 >
-                                    {/* Card Content */}
                                     <div className="p-4 sm:p-5">
                                         {/* Source + Time */}
-                                        <div className="flex items-center justify-between mb-3">
-                                            <span className="text-[10px] uppercase tracking-widest text-gray-600 font-bold">{item.source}</span>
-                                            <span className="text-[10px] text-gray-700">{item.published_at}</span>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-[10px] uppercase tracking-widest text-blue-400/70 font-bold">{item.source}</span>
+                                            <span className="text-[10px] text-gray-700">{timeAgo(item.published_at)}</span>
                                         </div>
 
                                         {/* Title */}
-                                        <h2 className="text-base sm:text-lg font-medium text-white leading-snug mb-3">
+                                        <h2 className="text-sm sm:text-base font-medium text-white leading-snug mb-2">
                                             {item.title}
                                         </h2>
 
-                                        {/* Snippet / Content Preview */}
-                                        {item.snippet && (
-                                            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed mb-3 line-clamp-3">
-                                                {item.snippet}
-                                            </p>
-                                        )}
+                                        {/* Body/Content */}
+                                        <p className="text-xs text-gray-500 leading-relaxed mb-3 line-clamp-3">
+                                            {item.body}
+                                        </p>
 
-                                        {/* Impact Score Badge (if pre-analyzed) */}
-                                        {item.impact_score !== undefined && (
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${item.impact_score > 0 ? 'bg-emerald-900/30 text-emerald-400' : 'bg-red-900/30 text-red-400'}`}>
-                                                    Impact: {item.impact_score > 0 ? '+' : ''}{item.impact_score}
-                                                </span>
-                                                {item.affected_assets && item.affected_assets.map((asset, i) => (
-                                                    <span key={i} className="text-[10px] bg-white/5 text-gray-400 px-1.5 py-0.5 rounded border border-white/5">
-                                                        {asset}
-                                                    </span>
+                                        {/* Currency Tags from article */}
+                                        {item.currencies.length > 0 && (
+                                            <div className="flex flex-wrap gap-1.5 mb-3">
+                                                {item.currencies.map((c, i) => (
+                                                    <SymbolChip
+                                                        key={i}
+                                                        symbol={c.code.toUpperCase()}
+                                                        priceData={priceMap[c.code.toUpperCase()] || null}
+                                                        onTap={setSelectedSymbol}
+                                                    />
                                                 ))}
                                             </div>
                                         )}
 
                                         {/* Action Row */}
                                         <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                                            {item.link && (
-                                                <a
-                                                    href={item.link}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[10px] text-gray-600 hover:text-blue-400 uppercase tracking-widest transition-colors"
-                                                >
-                                                    Source &rarr;
-                                                </a>
-                                            )}
+                                            <a
+                                                href={item.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[10px] text-gray-600 hover:text-blue-400 uppercase tracking-widest transition-colors"
+                                            >
+                                                Source →
+                                            </a>
 
                                             <button
-                                                onClick={() => analyzeArticle(index, item.title)}
+                                                onClick={() => analyzeArticle(index, item)}
                                                 disabled={analysis?.loading}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-xs font-medium rounded-lg border border-blue-500/20 hover:border-blue-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-xs font-medium rounded-lg border border-blue-500/20 hover:border-blue-500/40 transition-all disabled:opacity-50 active:scale-95"
                                             >
                                                 {analysis?.loading ? (
                                                     <>
-                                                        <span className="inline-block w-3 h-3 border-t border-blue-300 rounded-full animate-spin"></span>
+                                                        <span className="w-3 h-3 border-t border-blue-300 rounded-full animate-spin"></span>
                                                         Analyzing...
+                                                    </>
+                                                ) : hasAnalysis ? (
+                                                    <>
+                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                        </svg>
+                                                        Re-analyze
                                                     </>
                                                 ) : (
                                                     <>
                                                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                                                         </svg>
                                                         AI Analyze
                                                     </>
@@ -234,9 +430,9 @@ export default function NewsPage() {
                                         </div>
                                     </div>
 
-                                    {/* ── Inline AI Analysis Result ─── */}
+                                    {/* ── AI Analysis Panel ─── */}
                                     <AnimatePresence>
-                                        {analysis?.result && (
+                                        {hasAnalysis && (
                                             <motion.div
                                                 initial={{ height: 0, opacity: 0 }}
                                                 animate={{ height: 'auto', opacity: 1 }}
@@ -245,15 +441,35 @@ export default function NewsPage() {
                                                 className="overflow-hidden"
                                             >
                                                 <div className="px-4 sm:px-5 pb-4 pt-3 bg-blue-950/20 border-t border-blue-500/10">
+                                                    {/* AI Header */}
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <svg className="w-3.5 h-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                                                         </svg>
                                                         <span className="text-[10px] uppercase tracking-widest text-blue-400 font-bold">MarketMind Analysis</span>
                                                     </div>
-                                                    <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+
+                                                    {/* AI Text */}
+                                                    <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-wrap mb-3">
                                                         {analysis.result}
                                                     </p>
+
+                                                    {/* Affected Symbols with Charts */}
+                                                    {symbols.length > 0 && (
+                                                        <div>
+                                                            <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2">Affected Instruments</div>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {symbols.map((sym, i) => (
+                                                                    <SymbolChip
+                                                                        key={i}
+                                                                        symbol={sym}
+                                                                        priceData={priceMap[sym] || null}
+                                                                        onTap={setSelectedSymbol}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </motion.div>
                                         )}
@@ -270,6 +486,17 @@ export default function NewsPage() {
                     </div>
                 )}
             </main>
+
+            {/* ── Symbol Detail Modal ─── */}
+            <AnimatePresence>
+                {selectedSymbol && (
+                    <SymbolDetail
+                        symbol={selectedSymbol}
+                        priceData={priceMap[selectedSymbol] || null}
+                        onClose={() => setSelectedSymbol(null)}
+                    />
+                )}
+            </AnimatePresence>
 
             <ChatWidget />
         </div>
