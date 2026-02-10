@@ -32,7 +32,8 @@ export default function ChatWidget() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:8000/api/ai/chat', {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const res = await fetch(`${apiUrl}/api/ai/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: userMsg.content }),
@@ -67,8 +68,8 @@ export default function ChatWidget() {
                             {messages.map((m, i) => (
                                 <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[80%] p-2 rounded text-xs ${m.role === 'user'
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-800 text-gray-200 border border-gray-700'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-800 text-gray-200 border border-gray-700'
                                         }`}>
                                         {m.content}
                                     </div>

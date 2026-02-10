@@ -30,9 +30,11 @@ export default function NewsPage() {
         const fetchData = async () => {
             try {
                 // Parallel Fetch
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                console.log("Fetching news from:", apiUrl);
                 const [newsRes, summaryRes] = await Promise.all([
-                    fetch('http://localhost:8000/api/news'),
-                    fetch('http://localhost:8000/api/news/summary')
+                    fetch(`${apiUrl}/api/news`),
+                    fetch(`${apiUrl}/api/news/summary`)
                 ]);
 
                 const newsData = await newsRes.json();
@@ -71,7 +73,7 @@ export default function NewsPage() {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
                         <h2 className="text-2xl font-light mb-2 md:mb-0">
                             MARKET PULSE: <span className={`font-bold ${summary.sentiment === 'Bullish' ? 'text-green-400' :
-                                    summary.sentiment === 'Bearish' ? 'text-red-400' : 'text-gray-400'
+                                summary.sentiment === 'Bearish' ? 'text-red-400' : 'text-gray-400'
                                 }`}>{summary.sentiment.toUpperCase()}</span>
                         </h2>
                         <div className="px-3 py-1 bg-blue-900/30 text-blue-300 text-xs font-bold rounded border border-blue-800">
