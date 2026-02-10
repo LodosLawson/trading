@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import ChatWidget from '@/components/ui/ChatWidget'; // Import ChatWidget
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import ChatWidget from '@/components/ui/ChatWidget';
 
 interface NewsItem {
     title: string;
     link: string;
     source: string;
     published_at: string;
-    // AI Fields (Optional)
+    snippet?: string;
     impact_score?: number;
     reasoning?: string;
     affected_assets?: string[];
@@ -21,15 +22,21 @@ interface MarketSummary {
     takeaways: string[];
 }
 
+/* ── AI Analysis State per card ──────────────────── */
+interface AnalysisState {
+    loading: boolean;
+    result: string | null;
+}
+
 export default function NewsPage() {
     const [news, setNews] = useState<NewsItem[]>([]);
     const [summary, setSummary] = useState<MarketSummary | null>(null);
     const [loading, setLoading] = useState(true);
+    const [analyses, setAnalyses] = useState<Record<number, AnalysisState>>({});
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Use Next.js API routes (no external backend needed)
                 const [newsRes, summaryRes] = await Promise.all([
                     fetch('/api/news'),
                     fetch('/api/summary')
@@ -43,7 +50,6 @@ export default function NewsPage() {
                 const summaryData = await summaryRes.json();
 
                 setNews(newsData || []);
-                // Ensure summary has required fields before setting
                 if (summaryData && summaryData.sentiment) {
                     setSummary(summaryData);
                 } else {
@@ -59,111 +65,211 @@ export default function NewsPage() {
         fetchData();
     }, []);
 
+    const analyzeArticle = async (index: number, title: string) => {
+        setAnalyses(prev => ({ ...prev, [index]: { loading: true, result: null } }));
+
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: `Analyze this news headline for trading impact. Be concise (max 3 sentences). Include sentiment score (-10 to +10) and affected assets:\n\n"${title}"`
+                }),
+            });
+            const data = await res.json();
+            setAnalyses(prev => ({ ...prev, [index]: { loading: false, result: data.reply } }));
+        } catch {
+            setAnalyses(prev => ({ ...prev, [index]: { loading: false, result: 'Analysis failed. Try again.' } }));
+        }
+    };
+
+    const sentimentColor = (s: string) => {
+        if (s === 'Bullish') return 'text-emerald-400';
+        if (s === 'Bearish') return 'text-red-400';
+        if (s === 'Volatile') return 'text-amber-400';
+        return 'text-gray-400';
+    };
+
+    const signalBg = (s: string) => {
+        if (s === 'Buy Dip') return 'bg-emerald-900/30 text-emerald-300 border-emerald-800';
+        if (s === 'Sell Rallies') return 'bg-red-900/30 text-red-300 border-red-800';
+        return 'bg-blue-900/30 text-blue-300 border-blue-800';
+    };
+
     return (
-        <div className="min-h-screen bg-black text-white p-8 font-sans selection:bg-neon-blue selection:text-black">
-            <header className="mb-12 flex justify-between items-center border-b border-gray-800 pb-4">
-                <h1 className="text-4xl font-thin tracking-tighter">
-                    MARKET<span className="font-bold text-blue-500">PULSE</span>
-                </h1>
-                <div className="text-xs text-gray-400 uppercase tracking-widest">
-                    Live Feed / AI Enhanced
+        <div className="min-h-screen bg-[#0a0a0f] text-white font-sans selection:bg-blue-500 selection:text-black">
+
+            {/* ── Header ─── */}
+            <header className="sticky top-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/5">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3 sm:gap-6">
+                        <Link href="/" className="text-gray-500 hover:text-white transition-colors text-xs uppercase tracking-widest">
+                            &larr;
+                        </Link>
+                        <h1 className="text-lg sm:text-xl font-thin tracking-tight">
+                            MARKET<span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">PULSE</span>
+                        </h1>
+                    </div>
+                    <span className="text-[10px] text-gray-600 uppercase tracking-widest hidden sm:block">Live Feed / AI Enhanced</span>
                 </div>
             </header>
 
-            {/* AI Market Summary Section */}
-            {summary && (
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-12 bg-gray-900/50 border-l-4 border-blue-500 p-6 rounded-r-lg backdrop-blur-sm"
-                >
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-                        <h2 className="text-2xl font-light mb-2 md:mb-0">
-                            MARKET PULSE: <span className={`font-bold ${summary.sentiment === 'Bullish' ? 'text-green-400' :
-                                summary.sentiment === 'Bearish' ? 'text-red-400' : 'text-gray-400'
-                                }`}>{summary.sentiment.toUpperCase()}</span>
-                        </h2>
-                        <div className="px-3 py-1 bg-blue-900/30 text-blue-300 text-xs font-bold rounded border border-blue-800">
-                            SIGNAL: {summary.signal.toUpperCase()}
+            <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+
+                {/* ── Market Summary ─── */}
+                {summary && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-8 bg-white/[0.03] border border-white/5 rounded-xl p-4 sm:p-6"
+                    >
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+                            <h2 className="text-base sm:text-lg font-light">
+                                Market Pulse: <span className={`font-bold ${sentimentColor(summary.sentiment)}`}>{summary.sentiment.toUpperCase()}</span>
+                            </h2>
+                            <span className={`px-3 py-1 text-[10px] font-bold rounded-full border ${signalBg(summary.signal)}`}>
+                                {summary.signal.toUpperCase()}
+                            </span>
                         </div>
+                        <ul className="space-y-2">
+                            {summary.takeaways.map((point, i) => (
+                                <li key={i} className="text-xs sm:text-sm text-gray-400 flex items-start gap-2">
+                                    <span className="text-blue-500 mt-0.5 shrink-0">›</span>
+                                    <span>{point}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </motion.div>
+                )}
+
+                {/* ── Loading ─── */}
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center h-64 gap-4">
+                        <div className="relative w-10 h-10">
+                            <div className="absolute inset-0 rounded-full border-t-2 border-blue-500 animate-spin"></div>
+                            <div className="absolute inset-1.5 rounded-full border-t-2 border-violet-500 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }}></div>
+                        </div>
+                        <p className="text-[10px] text-gray-600 animate-pulse uppercase tracking-widest">Analyzing Market Data</p>
                     </div>
-                    <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {summary.takeaways.map((point, i) => (
-                            <li key={i} className="text-sm text-gray-300 flex items-start">
-                                <span className="text-blue-500 mr-2">/</span>
-                                {point}
-                            </li>
-                        ))}
-                    </ul>
-                </motion.div>
-            )}
+                ) : (
+                    /* ── News Cards ─── */
+                    <div className="space-y-4">
+                        {news.map((item, index) => {
+                            const analysis = analyses[index];
 
-            {loading ? (
-                <div className="flex flex-col items-center justify-center h-64 gap-4">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                    <div className="text-xs text-gray-500 animate-pulse">Analyzing Market Data...</div>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {news.map((item, index) => {
-                        const score = item.impact_score || 0;
-                        const borderColor = score > 0 ? 'hover:border-green-500/50' : score < 0 ? 'hover:border-red-500/50' : 'hover:border-blue-500';
-
-                        return (
-                            <motion.a
-                                href={item.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                key={index}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                className={`group relative block bg-gray-900 border border-gray-800 ${borderColor} transition-colors duration-300 p-6 rounded-none overflow-hidden flex flex-col justify-between h-full`}
-                            >
-                                <div>
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="text-[10px] uppercase font-bold tracking-widest text-gray-500 group-hover:text-blue-400">
-                                            {item.source}
+                            return (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: Math.min(index * 0.06, 0.5) }}
+                                    className="bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden hover:border-white/10 transition-colors"
+                                >
+                                    {/* Card Content */}
+                                    <div className="p-4 sm:p-5">
+                                        {/* Source + Time */}
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-[10px] uppercase tracking-widest text-gray-600 font-bold">{item.source}</span>
+                                            <span className="text-[10px] text-gray-700">{item.published_at}</span>
                                         </div>
+
+                                        {/* Title */}
+                                        <h2 className="text-base sm:text-lg font-medium text-white leading-snug mb-3">
+                                            {item.title}
+                                        </h2>
+
+                                        {/* Snippet / Content Preview */}
+                                        {item.snippet && (
+                                            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed mb-3 line-clamp-3">
+                                                {item.snippet}
+                                            </p>
+                                        )}
+
+                                        {/* Impact Score Badge (if pre-analyzed) */}
                                         {item.impact_score !== undefined && (
-                                            <div className={`text-xs font-bold px-2 py-0.5 rounded ${score > 0 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
-                                                {score > 0 ? '+' : ''}{score}
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${item.impact_score > 0 ? 'bg-emerald-900/30 text-emerald-400' : 'bg-red-900/30 text-red-400'}`}>
+                                                    Impact: {item.impact_score > 0 ? '+' : ''}{item.impact_score}
+                                                </span>
+                                                {item.affected_assets && item.affected_assets.map((asset, i) => (
+                                                    <span key={i} className="text-[10px] bg-white/5 text-gray-400 px-1.5 py-0.5 rounded border border-white/5">
+                                                        {asset}
+                                                    </span>
+                                                ))}
                                             </div>
                                         )}
+
+                                        {/* Action Row */}
+                                        <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                                            {item.link && (
+                                                <a
+                                                    href={item.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-[10px] text-gray-600 hover:text-blue-400 uppercase tracking-widest transition-colors"
+                                                >
+                                                    Source &rarr;
+                                                </a>
+                                            )}
+
+                                            <button
+                                                onClick={() => analyzeArticle(index, item.title)}
+                                                disabled={analysis?.loading}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-xs font-medium rounded-lg border border-blue-500/20 hover:border-blue-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                                            >
+                                                {analysis?.loading ? (
+                                                    <>
+                                                        <span className="inline-block w-3 h-3 border-t border-blue-300 rounded-full animate-spin"></span>
+                                                        Analyzing...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                                                        </svg>
+                                                        AI Analyze
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <h2 className="text-xl font-light leading-snug mb-4 group-hover:text-blue-100 transition-colors">
-                                        {item.title}
-                                    </h2>
+                                    {/* ── Inline AI Analysis Result ─── */}
+                                    <AnimatePresence>
+                                        {analysis?.result && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="px-4 sm:px-5 pb-4 pt-3 bg-blue-950/20 border-t border-blue-500/10">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <svg className="w-3.5 h-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                                                        </svg>
+                                                        <span className="text-[10px] uppercase tracking-widest text-blue-400 font-bold">MarketMind Analysis</span>
+                                                    </div>
+                                                    <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                                        {analysis.result}
+                                                    </p>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
+                            );
+                        })}
 
-                                    {item.reasoning && (
-                                        <p className="text-xs text-gray-400 mb-4 italic border-l-2 border-gray-700 pl-3">
-                                            "{item.reasoning}"
-                                        </p>
-                                    )}
-
-                                    {item.affected_assets && (
-                                        <div className="flex flex-wrap gap-2 mb-4">
-                                            {item.affected_assets.map((asset, i) => (
-                                                <span key={i} className="text-[10px] bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded border border-gray-700">
-                                                    {asset}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex items-center justify-between text-xs text-gray-500 mt-4 border-t border-gray-800 pt-4">
-                                    <span>{new Date(item.published_at).toLocaleTimeString()}</span>
-                                    <span className="group-hover:translate-x-1 transition-transform duration-300">
-                                        READ_FULL_STORY &rarr;
-                                    </span>
-                                </div>
-                            </motion.a>
-                        );
-                    })}
-                </div>
-            )}
+                        {news.length === 0 && !loading && (
+                            <div className="text-center py-20 text-gray-600 text-sm">
+                                No news available. Check back later.
+                            </div>
+                        )}
+                    </div>
+                )}
+            </main>
 
             <ChatWidget />
         </div>

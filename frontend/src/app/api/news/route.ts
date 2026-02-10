@@ -33,6 +33,7 @@ export async function GET() {
             link: string;
             source: string;
             published_at: string;
+            snippet: string;
         }> = [];
 
         for (const page of data) {
@@ -43,6 +44,7 @@ export async function GET() {
                     link: item.url || '',
                     source: 'Google Search',
                     published_at: item.date || 'Just Now',
+                    snippet: item.description || item.snippet || '',
                 });
             }
         }
