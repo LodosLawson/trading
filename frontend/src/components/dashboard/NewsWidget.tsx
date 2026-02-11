@@ -46,8 +46,14 @@ export default function NewsWidget() {
     return (
         <div className="h-full flex flex-col bg-[#1a1a20] border border-white/5 rounded-xl overflow-hidden">
             <div className="p-3 border-b border-white/5 flex justify-between items-center bg-[#0a0a0f]/50">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Live Wire</span>
-                <span className="block w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Live Wire</span>
+                    <span className="relative flex h-1.5 w-1.5 ml-1">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+                    </span>
+                </div>
+                <span className="text-[9px] text-gray-600 font-mono">UPDATED</span>
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-2">

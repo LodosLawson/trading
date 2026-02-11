@@ -8,7 +8,11 @@ interface Message {
     content: string;
 }
 
-export default function DashboardChatWidget() {
+interface DashboardChatWidgetProps {
+    symbol?: string; // e.g. "BINANCE:BTCUSDT"
+}
+
+export default function DashboardChatWidget({ symbol }: DashboardChatWidgetProps) {
     const [messages, setMessages] = useState<Message[]>([
         { role: 'ai', content: 'MarketMind ready.' }
     ]);
@@ -16,13 +20,17 @@ export default function DashboardChatWidget() {
     const [loading, setLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    const cleanSymbol = symbol ? symbol.split(':')[1]?.replace('USDT', '') : '';
+
     useEffect(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }, [messages]);
 
-    const sendMessage = async () => {
-        if (!input.trim()) return;
-        const userMsg: Message = { role: 'user', content: input };
+    const sendMessage = async (text?: string) => {
+        const msgText = text || input;
+        if (!msgText.trim()) return;
+
+        const userMsg: Message = { role: 'user', content: msgText };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setLoading(true);
@@ -31,7 +39,7 @@ export default function DashboardChatWidget() {
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: input }),
+                body: JSON.stringify({ message: msgText }),
             });
             const data = await res.json();
             setMessages(prev => [...prev, { role: 'ai', content: data.reply || 'Analysis complete.' }]);
@@ -43,10 +51,17 @@ export default function DashboardChatWidget() {
     };
 
     return (
-        <div className="h-full flex flex-col bg-[#1a1a20] border border-white/5 rounded-xl overflow-hidden">
+        <div className="h-full flex flex-col bg-[#1a1a20] border border-white/5 rounded-xl overflow-hidden relative">
             <div className="p-3 border-b border-white/5 flex justify-between items-center bg-[#0a0a0f]/50">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">AI Link</span>
-                <span className={`block w-1.5 h-1.5 rounded-full ${loading ? 'bg-amber-500 animate-pulse' : 'bg-violet-500'}`}></span>
+                {cleanSymbol && (
+                    <button
+                        onClick={() => sendMessage(`Analyze technical structure of ${cleanSymbol} and give short term prediction.`)}
+                        className="text-[9px] bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 px-2 py-0.5 rounded border border-violet-500/30 transition-colors"
+                    >
+                        ✨ Analyze {cleanSymbol}
+                    </button>
+                )}
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 py-2 space-y-3 custom-scrollbar" ref={scrollRef}>
@@ -80,11 +95,11 @@ export default function DashboardChatWidget() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                        placeholder="Ask..."
+                        placeholder={`Ask about ${cleanSymbol || 'markets'}...`}
                         className="flex-1 bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500/50"
                     />
                     <button
-                        onClick={sendMessage}
+                        onClick={() => sendMessage()}
                         disabled={loading || !input.trim()}
                         className="px-3 bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors disabled:opacity-50"
                     >

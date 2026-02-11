@@ -7,9 +7,11 @@ import ChartWidget from '@/components/dashboard/ChartWidget';
 import MarketWidget from '@/components/dashboard/MarketWidget';
 import NewsWidget from '@/components/dashboard/NewsWidget';
 import DashboardChatWidget from '@/components/dashboard/DashboardChatWidget';
+import TradingPanel from '@/components/dashboard/TradingPanel';
 
 export default function DashboardPage() {
     const [selectedSymbol, setSelectedSymbol] = useState('BINANCE:BTCUSDT');
+    const [rightPanelMode, setRightPanelMode] = useState<'market' | 'trade'>('market');
 
     return (
         <div className="h-screen bg-[#0a0a0f] text-white font-sans overflow-hidden flex flex-col">
@@ -50,20 +52,43 @@ export default function DashboardPage() {
                 <motion.div
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="col-span-1 md:col-span-9 md:row-span-4 h-[300px] md:h-auto relative group order-1"
+                    className="col-span-1 md:col-span-9 md:row-span-4 h-[350px] md:h-auto relative group order-1"
                 >
                     <ChartWidget symbol={selectedSymbol} />
                 </motion.div>
 
-                {/* 2. Market Ticker (Desktop: Right Side, Mobile: Under Chart) */}
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="col-span-1 md:col-span-3 md:row-span-6 h-[200px] md:h-full order-2 md:order-2"
-                >
-                    <MarketWidget onSelectSymbol={setSelectedSymbol} />
-                </motion.div>
+                {/* 2. Right Panel (Market / Trade) (Desktop: Right Side, Mobile: Under Chart) */}
+                <div className="col-span-1 md:col-span-3 md:row-span-6 h-[250px] md:h-full order-2 md:order-2 flex flex-col gap-2">
+                    {/* Tabs */}
+                    <div className="flex p-1 bg-white/5 rounded-lg shrink-0">
+                        <button
+                            onClick={() => setRightPanelMode('market')}
+                            className={`flex-1 py-1 text-[10px] uppercase font-bold rounded transition-all ${rightPanelMode === 'market' ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:text-gray-300'}`}
+                        >
+                            Market
+                        </button>
+                        <button
+                            onClick={() => setRightPanelMode('trade')}
+                            className={`flex-1 py-1 text-[10px] uppercase font-bold rounded transition-all ${rightPanelMode === 'trade' ? 'bg-emerald-600 text-white shadow' : 'text-gray-500 hover:text-gray-300'}`}
+                        >
+                            Trade
+                        </button>
+                    </div>
+
+                    <motion.div
+                        key={rightPanelMode}
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex-1 overflow-hidden"
+                    >
+                        {rightPanelMode === 'market' ? (
+                            <MarketWidget onSelectSymbol={setSelectedSymbol} />
+                        ) : (
+                            <TradingPanel symbol={selectedSymbol} />
+                        )}
+                    </motion.div>
+                </div>
 
                 {/* 3. News Feed (Desktop: Bottom Left, Mobile: Bottom) */}
                 <motion.div
@@ -82,7 +107,7 @@ export default function DashboardPage() {
                     transition={{ delay: 0.3 }}
                     className="col-span-1 md:col-span-4 md:row-span-2 h-[250px] md:h-auto order-3 md:order-4"
                 >
-                    <DashboardChatWidget />
+                    <DashboardChatWidget symbol={selectedSymbol} />
                 </motion.div>
 
             </main>
