@@ -207,7 +207,7 @@ function LineChart({ prices, timeframe }: { prices: number[][]; timeframe: strin
 /* ── Main Chat Page ──────────────────────────────── */
 export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'ai', content: 'MarketMind online. Ask me anything about the markets, or search for a coin to analyze its chart.' }
+        { role: 'ai', content: 'MarketMind online. Ask me to analyze any crypto asset (e.g., "Analyze SOL") for real-time data.' }
     ]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
@@ -222,7 +222,7 @@ export default function ChatPage() {
 
     useEffect(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }, [messages]);
+    }, [messages, loading]);
 
     // Debounced search
     const handleSearch = useCallback((q: string) => {
@@ -294,13 +294,48 @@ export default function ChatPage() {
         setLoading(true);
 
         try {
+            // 1. Get AI Response
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: text }),
             });
             const data = await res.json();
-            setMessages(prev => [...prev, { role: 'ai', content: data.reply }]);
+            const replyText = data.reply || 'No response.';
+
+            // 2. Detect Symbols for Rich UI
+            const symbolRegex = /\b(BTC|ETH|SOL|BNB|XRP|ADA|DOGE|DOT|AVAX|MATIC|LINK|UNI|ATOM|LTC|NEAR|APT|ARB|OP|SUI|SEI|TIA|JUP|WIF|PEPE|SHIB|BONK)\b/i;
+            const match = text.match(symbolRegex) || replyText.match(symbolRegex);
+            let chartData: ChartData | null = null;
+
+            if (match) {
+                const symbol = match[0].toUpperCase();
+                // SEARCH for coin ID
+                try {
+                    const searchRes = await fetch(`/api/search?q=${symbol}`);
+                    const searchData = await searchRes.json();
+                    if (searchData && searchData.length > 0) {
+                        const coin = searchData[0];
+                        // Fetch Chart Data
+                        const [lineRes, ohlcRes] = await Promise.all([
+                            fetch(`/api/chart?id=${coin.id}&days=1&type=line`),
+                            fetch(`/api/chart?id=${coin.id}&days=1&type=ohlc`),
+                        ]);
+                        const lineData = lineRes.ok ? await lineRes.json() : { prices: [] };
+                        const ohlcData = ohlcRes.ok ? await ohlcRes.json() : [];
+
+                        chartData = {
+                            coinId: coin.id,
+                            coinName: coin.name,
+                            timeframe: '24h',
+                            prices: lineData.prices || [],
+                            ohlc: Array.isArray(ohlcData) ? ohlcData : null,
+                        };
+                    }
+                } catch (e) { console.error(e); }
+            }
+
+            setMessages(prev => [...prev, { role: 'ai', content: replyText, chart: chartData }]);
         } catch {
             setMessages(prev => [...prev, { role: 'ai', content: 'Connection error. Try again.' }]);
         } finally {
@@ -385,7 +420,7 @@ export default function ChatPage() {
                 )}
             </AnimatePresence>
 
-            {/* ── Chart Panel ─── */}
+            {/* ── Chart Panel (Main) ─── */}
             <AnimatePresence>
                 {activeChart && (
                     <motion.div
@@ -395,13 +430,10 @@ export default function ChatPage() {
                         className="shrink-0 border-b border-white/5 overflow-hidden"
                     >
                         <div className="p-3">
-                            {/* Chart header */}
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-medium text-white">{activeChart.coinName}</span>
                                 <button onClick={() => setActiveChart(null)} className="text-gray-600 hover:text-white text-xs">&times;</button>
                             </div>
-
-                            {/* Timeframe tabs */}
                             <div className="flex gap-1 mb-2">
                                 {TIMEFRAMES.map(tf => (
                                     <button
@@ -416,8 +448,6 @@ export default function ChatPage() {
                                     </button>
                                 ))}
                             </div>
-
-                            {/* Chart */}
                             <div className="h-48 sm:h-64 bg-[#0a0a0f] rounded-lg border border-white/5">
                                 {chartType === 'candle' && activeChart.ohlc && activeChart.ohlc.length > 0 ? (
                                     <CandlestickChart ohlc={activeChart.ohlc} timeframe={activeChart.timeframe} />
@@ -433,34 +463,51 @@ export default function ChatPage() {
             </AnimatePresence>
 
             {/* ── Messages ─── */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" ref={scrollRef}>
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4" ref={scrollRef}>
                 {messages.map((m, i) => (
                     <motion.div
                         key={i}
-                        initial={{ opacity: 0, y: 6 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
                     >
-                        <div className={`max-w-[85%] sm:max-w-[70%] px-3 py-2 rounded-xl text-sm leading-relaxed whitespace-pre-wrap ${m.role === 'user'
-                            ? 'bg-blue-600/20 text-blue-100 border border-blue-500/20'
-                            : 'bg-white/[0.03] text-gray-300 border border-white/5'
+                        <div className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${m.role === 'user'
+                            ? 'bg-blue-600 text-white rounded-br-none'
+                            : 'bg-[#1a1a20] text-gray-200 border border-white/10 rounded-bl-none'
                             }`}>
                             {m.role === 'ai' && (
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <svg className="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                                    </svg>
-                                    <span className="text-[9px] text-blue-400/70 uppercase tracking-widest font-bold">MarketMind</span>
+                                <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-white/5">
+                                    <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-blue-500 to-violet-500 flex items-center justify-center text-[8px] font-bold text-white">AI</div>
+                                    <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">MarketMind</span>
                                 </div>
                             )}
+
                             {m.content}
+
+                            {/* Rich Widget: Chart in Message */}
+                            {m.chart && (
+                                <div className="mt-3 pt-3 border-t border-white/10">
+                                    <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 flex items-center justify-between">
+                                        <span>{m.chart.coinName} Analysis</span>
+                                        <span className={`text-[10px] ${m.chart.prices[m.chart.prices.length - 1]?.[1] >= m.chart.prices[0]?.[1] ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            {m.chart.prices[m.chart.prices.length - 1]?.[1] >= m.chart.prices[0]?.[1] ? 'BULLISH' : 'BEARISH'}
+                                        </span>
+                                    </div>
+                                    <div className="h-32 w-full bg-black/20 rounded-lg overflow-hidden border border-white/5">
+                                        <LineChart prices={m.chart.prices} timeframe="24h" />
+                                    </div>
+                                </div>
+                            )}
                         </div>
+                        <span className="text-[9px] text-gray-700 mt-1 px-1">
+                            {m.role === 'user' ? 'You' : 'AI Agent'} • Just now
+                        </span>
                     </motion.div>
                 ))}
 
                 {loading && (
                     <div className="flex justify-start">
-                        <div className="px-3 py-2 bg-white/[0.03] border border-white/5 rounded-xl">
+                        <div className="px-4 py-3 bg-[#1a1a20] border border-white/10 rounded-2xl rounded-bl-none">
                             <div className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                                 <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
@@ -472,23 +519,23 @@ export default function ChatPage() {
             </div>
 
             {/* ── Input Bar ─── */}
-            <div className="shrink-0 border-t border-white/5 bg-[#0a0a0f]/90 backdrop-blur-xl p-3">
-                <div className="flex gap-2 max-w-3xl mx-auto">
+            <div className="shrink-0 border-t border-white/5 bg-[#0a0a0f]/90 backdrop-blur-xl p-3 sm:p-4">
+                <div className="flex gap-2 max-w-4xl mx-auto">
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                        placeholder="Ask MarketMind anything..."
-                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50 transition-all"
+                        placeholder="Ask MarketMind..."
+                        className="flex-1 bg-[#1a1a20] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50 focus:bg-[#202025] transition-all shadow-inner"
                     />
                     <button
                         onClick={sendMessage}
                         disabled={loading || !input.trim()}
-                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+                        className="px-5 py-3 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 shadow-lg shadow-blue-500/20"
                     >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                        <svg className="w-5 h-5 transform rotate-90" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19.5v-15m0 0l-6.75 6.75M12 4.5l6.75 6.75" />
                         </svg>
                     </button>
                 </div>

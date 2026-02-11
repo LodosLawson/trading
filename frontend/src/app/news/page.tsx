@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import ChatWidget from '@/components/ui/ChatWidget';
+import BrowserWidget from '@/components/ui/BrowserWidget';
 
 /* ── Types ───────────────────────────────────────── */
 interface CryptoNewsItem {
@@ -362,11 +363,6 @@ Mentioned currencies: ${item.currencies.map(c => c.code).join(', ') || 'None spe
                             </svg>
                         </button>
                         {/* AI Chat link */}
-                        <Link href="/chat" className="p-1.5 text-gray-600 hover:text-blue-400 rounded-lg transition-colors">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                            </svg>
-                        </Link>
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -623,6 +619,7 @@ Mentioned currencies: ${item.currencies.map(c => c.code).join(', ') || 'None spe
             </AnimatePresence>
 
             <ChatWidget />
+            <BrowserWidget />
         </div>
     );
 }
