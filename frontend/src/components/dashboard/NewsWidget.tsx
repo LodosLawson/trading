@@ -50,24 +50,26 @@ export default function NewsWidget() {
                 <span className="block w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
                 {loading ? (
-                    <div className="p-4 text-center text-xs text-gray-600">Loading Intelligence...</div>
+                    <div className="p-4 text-center text-xs text-gray-500 animate-pulse">Scanning Global Feeds...</div>
                 ) : (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                         {news.map((item, i) => (
                             <a
                                 key={i}
                                 href={item.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block p-3 rounded-lg hover:bg-white/5 transition-colors group"
+                                className="block p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] hover:border-blue-500/20 transition-all group"
                             >
-                                <div className="flex justify-between items-start mb-1">
-                                    <span className="text-[9px] font-bold text-blue-400 uppercase">{item.source}</span>
-                                    <span className="text-[9px] text-gray-600">{timeAgo(item.published_at)}</span>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="px-2 py-0.5 rounded bg-blue-500/10 text-[10px] font-bold text-blue-400 uppercase tracking-wider border border-blue-500/20">
+                                        {item.source}
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 font-mono">{timeAgo(item.published_at)}</span>
                                 </div>
-                                <h4 className="text-xs text-gray-200 leading-snug group-hover:text-white line-clamp-2 md:line-clamp-1 lg:line-clamp-2">
+                                <h4 className="text-sm font-medium text-gray-200 leading-snug group-hover:text-blue-200 transition-colors">
                                     {item.title}
                                 </h4>
                             </a>

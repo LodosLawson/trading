@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import ChartWidget from '@/components/dashboard/ChartWidget';
 import MarketWidget from '@/components/dashboard/MarketWidget';
 import NewsWidget from '@/components/dashboard/NewsWidget';
+import DashboardChatWidget from '@/components/dashboard/DashboardChatWidget';
 
 export default function DashboardPage() {
     const [selectedSymbol, setSelectedSymbol] = useState('BINANCE:BTCUSDT');
@@ -22,8 +23,8 @@ export default function DashboardPage() {
                         </svg>
                         Terminal
                     </Link>
-                    <div className="w-[1px] h-4 bg-white/10"></div>
-                    <h1 className="text-sm font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500 uppercase">
+                    <div className="w-[1px] h-4 bg-white/10 hidden sm:block"></div>
+                    <h1 className="text-sm font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500 uppercase hidden sm:block">
                         Standard Mode
                     </h1>
                 </div>
@@ -37,41 +38,51 @@ export default function DashboardPage() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        Connected
+                        <span className="hidden sm:inline">Connected</span>
                     </div>
                 </div>
             </header>
 
-            {/* Main Grid Layout */}
-            <main className="flex-1 p-2 gap-2 grid grid-cols-12 grid-rows-6 overflow-hidden">
+            {/* Main Grid Layout - Responsive */}
+            <main className="flex-1 p-2 gap-2 grid grid-cols-1 md:grid-cols-12 md:grid-rows-6 overflow-y-auto md:overflow-hidden">
 
-                {/* 1. Main Chart Area (Top Left - Large) */}
+                {/* 1. Main Chart Area (Desktop: Top Left, Mobile: Top) */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="col-span-12 md:col-span-9 row-span-4 relative group"
+                    className="col-span-1 md:col-span-9 md:row-span-4 h-[300px] md:h-auto relative group order-1"
                 >
                     <ChartWidget symbol={selectedSymbol} />
                 </motion.div>
 
-                {/* 2. Market Ticker (Right Side - Tall) */}
+                {/* 2. Market Ticker (Desktop: Right Side, Mobile: Under Chart) */}
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="col-span-12 md:col-span-3 row-span-6 h-full"
+                    className="col-span-1 md:col-span-3 md:row-span-6 h-[200px] md:h-full order-2 md:order-2"
                 >
                     <MarketWidget onSelectSymbol={setSelectedSymbol} />
                 </motion.div>
 
-                {/* 3. News Feed (Bottom Left - Wide) */}
+                {/* 3. News Feed (Desktop: Bottom Left, Mobile: Bottom) */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="col-span-12 md:col-span-9 row-span-2"
+                    className="col-span-1 md:col-span-5 md:row-span-2 h-[250px] md:h-auto order-4 md:order-3"
                 >
                     <NewsWidget />
+                </motion.div>
+
+                {/* 4. Chat Widget (Desktop: Bottom Center, Mobile: Under Ticker) */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="col-span-1 md:col-span-4 md:row-span-2 h-[250px] md:h-auto order-3 md:order-4"
+                >
+                    <DashboardChatWidget />
                 </motion.div>
 
             </main>
