@@ -12,6 +12,7 @@ import TradingPanel from '@/components/dashboard/TradingPanel';
 export default function DashboardPage() {
     const [selectedSymbol, setSelectedSymbol] = useState('BINANCE:BTCUSDT');
     const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'markets' | 'intel'>('chart');
+    const [rightPanelMode, setRightPanelMode] = useState<'market' | 'trade'>('market');
 
     // Helper for Nav Icons
     const NavIcon = ({ active, label, icon }: { active: boolean, label: string, icon: React.ReactNode }) => (
