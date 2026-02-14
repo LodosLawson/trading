@@ -16,68 +16,91 @@ export default function Home() {
     <>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
 
-      <div className={`min-h-screen bg-[#0a0a0f] text-white flex flex-col items-center justify-center p-6 sm:p-8 relative overflow-hidden font-sans selection:bg-blue-500 selection:text-white ${showSplash ? 'opacity-0' : ''}`}>
+      <div className={`min-h-screen bg-[#050508] text-white flex flex-col items-center justify-center p-6 sm:p-8 relative overflow-hidden font-sans selection:bg-blue-500 selection:text-white ${showSplash ? 'opacity-0' : ''}`}>
 
-        {/* Abstract Background */}
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-blue-900/10 rounded-full blur-[120px] animate-pulse"></div>
-          <div className="absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-violet-900/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-gray-800 to-transparent opacity-50"></div>
-
-          {/* Subtle grid */}
-          <div className="absolute inset-0 opacity-[0.02]"
-            style={{
-              backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-              backgroundSize: '40px 40px'
+        {/* --- Animated Background --- */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          {/* Glowing Orbs */}
+          <motion.div
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3],
+              x: [0, 50, 0],
+              y: [0, -30, 0]
             }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-blue-600/20 rounded-full blur-[150px]"
           />
+          <motion.div
+            animate={{
+              scale: [1, 1.3, 1],
+              opacity: [0.2, 0.4, 0.2],
+              x: [0, -50, 0],
+              y: [0, 50, 0]
+            }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-violet-600/10 rounded-full blur-[150px]"
+          />
+
+          {/* Moving Grid Lines (Perspective) */}
+          <div className="absolute inset-0 perspective-[500px]">
+            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.05] bg-[length:50px_50px] [transform:rotateX(60deg)_translateY(-100px)] origin-top"></div>
+          </div>
         </div>
 
-        <main className="z-10 flex flex-col items-center text-center max-w-4xl">
+        {/* --- Main Content --- */}
+        <main className="z-10 flex flex-col items-center text-center max-w-5xl w-full">
+
+          {/* Hero Section */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: showSplash ? 0 : 1, y: showSplash ? 30 : 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="mb-8"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: showSplash ? 0 : 1, scale: showSplash ? 0.95 : 1 }}
+            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+            className="mb-12 relative"
           >
-            <h1 className="text-5xl sm:text-6xl md:text-8xl font-thin tracking-tighter mb-4">
-              MARKET<span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-500">PULSE</span>
+            {/* Text Glow */}
+            <div className="absolute -inset-10 bg-gradient-to-r from-blue-500/20 to-violet-500/20 blur-3xl opacity-50 rounded-full"></div>
+
+            <h1 className="relative text-6xl sm:text-7xl md:text-9xl font-black tracking-tighter mb-6 leading-none">
+              MARKET
+              <span className="text-transparent bg-clip-text bg-gradient-to-br from-blue-400 via-violet-400 to-white">PULSE</span>
             </h1>
-            <p className="text-gray-500 text-sm sm:text-lg md:text-xl uppercase tracking-[0.2em] font-light">
-              AI-Native Financial Intelligence
-            </p>
-            <p className="text-gray-700 text-[10px] sm:text-xs uppercase tracking-[0.3em] mt-2">
-              Powered by <span className="text-gray-500 font-bold">LockTrace</span>
-            </p>
+
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-px w-24 bg-gradient-to-r from-transparent via-blue-500 to-transparent"></div>
+              <p className="text-gray-400 text-sm sm:text-lg md:text-xl uppercase tracking-[0.4em] font-light">
+                The AI-Native Terminal
+              </p>
+            </div>
           </motion.div>
 
+          {/* CTA Button */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: showSplash ? 0 : 1, scale: showSplash ? 0.9 : 1 }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            className="space-y-8"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: showSplash ? 0 : 1, y: showSplash ? 40 : 0 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
+            className="w-full max-w-sm"
           >
-            <p className="text-gray-400 max-w-lg mx-auto leading-relaxed text-sm sm:text-base">
-              Experience the future of trading. Real-time news analysis, semantic impact scoring, and autonomous agentic insights.
-            </p>
+            <Link href="/terminal" className="group relative block w-full">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-violet-600 rounded-xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+              <button className="relative w-full py-5 bg-[#0a0a0f] ring-1 ring-white/10 rounded-xl leading-none flex items-center justify-center space-x-4 overflow-hidden group-hover:bg-[#121218] transition-colors">
+                <span className="text-gray-200 font-bold tracking-widest text-sm group-hover:text-white transition-colors">INITIALIZE TERMINAL</span>
+                <span className="text-blue-500 group-hover:translate-x-1 transition-transform duration-300">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </span>
+              </button>
+            </Link>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center">
-              <Link href="/terminal" className="group relative inline-flex items-center gap-3 px-8 py-4 bg-white text-black hover:bg-blue-500 hover:text-white transition-all duration-500 overflow-hidden w-full sm:w-auto justify-center rounded-full">
-                <span className="relative z-10 font-bold tracking-wider text-sm">ENTER TERMINAL</span>
-                <span className="relative z-10 group-hover:translate-x-1 transition-transform">&rarr;</span>
-                <div className="absolute inset-0 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></div>
-              </Link>
-            </div>
+            <p className="mt-6 text-gray-600 text-[10px] uppercase tracking-widest">
+              System v2.1.0 • <span className="text-blue-500/80">Online</span>
+            </p>
           </motion.div>
         </main>
 
-        <footer className="absolute bottom-6 sm:bottom-8 text-center">
-          <p className="text-[10px] sm:text-xs text-gray-700 uppercase tracking-widest">
-            Status: <span className="text-emerald-500">Operational</span> • v0.3.0
-          </p>
-          <p className="text-[9px] text-gray-800 uppercase tracking-widest mt-1">
-            Developed by <span className="text-gray-600">LockTrace</span> • © {new Date().getFullYear()}
-          </p>
+        {/* Footer info */}
+        <footer className="absolute bottom-6 sm:bottom-8 w-full px-8 flex justify-between text-[10px] text-gray-700 font-mono tracking-wider">
+          <span>LOCKTRACE PROTOCOL</span>
+          <span>SECURE CONNECTION</span>
         </footer>
       </div>
     </>

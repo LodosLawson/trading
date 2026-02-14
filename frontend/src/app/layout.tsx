@@ -36,6 +36,8 @@ export const metadata: Metadata = {
   },
 };
 
+import AppShell from "@/components/layout/AppShell";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -46,7 +48,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AppShell>
+          {children}
+        </AppShell>
         <Script
           id="sw-register"
           strategy="afterInteractive"
