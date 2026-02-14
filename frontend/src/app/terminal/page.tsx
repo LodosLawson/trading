@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import MarketWidget from '@/components/dashboard/MarketWidget';
 import NewsWidget from '@/components/dashboard/NewsWidget';
@@ -9,95 +9,231 @@ import ChartWidget from '@/components/dashboard/ChartWidget';
 import DashboardChatWidget from '@/components/dashboard/DashboardChatWidget';
 import BrowserWidget from '@/components/dashboard/BrowserWidget';
 
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1
-        }
-    }
-};
+// Types for our Grid System
+type WidgetType = 'MARKET' | 'NEWS' | 'CHART' | 'CHAT' | 'BROWSER';
 
-const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-};
+interface WidgetItem {
+    id: string;
+    type: WidgetType;
+    colSpan: number; // 1 to 12
+    rowSpan: number; // 1 to 12
+}
+
+const INITIAL_LAYOUT: WidgetItem[] = [
+    { id: 'market-1', type: 'MARKET', colSpan: 3, rowSpan: 6 },
+    { id: 'news-1', type: 'NEWS', colSpan: 3, rowSpan: 6 },
+    { id: 'chart-1', type: 'CHART', colSpan: 6, rowSpan: 8 },
+    { id: 'browser-1', type: 'BROWSER', colSpan: 6, rowSpan: 4 },
+    { id: 'chat-1', type: 'CHAT', colSpan: 3, rowSpan: 12 },
+];
+
+const AVAILABLE_WIDGETS: { type: WidgetType; label: string; defaultCol: number; defaultRow: number }[] = [
+    { type: 'MARKET', label: 'Market Ticker', defaultCol: 3, defaultRow: 6 },
+    { type: 'NEWS', label: 'News Feed', defaultCol: 3, defaultRow: 6 },
+    { type: 'CHART', label: 'Chart View', defaultCol: 6, defaultRow: 6 },
+    { type: 'CHAT', label: 'AI Agent', defaultCol: 3, defaultRow: 8 },
+    { type: 'BROWSER', label: 'Web Browser', defaultCol: 6, defaultRow: 4 },
+];
 
 export default function TerminalPage() {
+    const [layout, setLayout] = useState<WidgetItem[]>(INITIAL_LAYOUT);
+    const [isEditing, setIsEditing] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Initial load from local storage could go here
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // --- ACTIONS ---
+
+    const removeWidget = (id: string) => {
+        setLayout(prev => prev.filter(w => w.id !== id));
+    };
+
+    const addWidget = (type: WidgetType) => {
+        const template = AVAILABLE_WIDGETS.find(w => w.type === type);
+        if (!template) return;
+
+        const newWidget: WidgetItem = {
+            id: `${type.toLowerCase()}-${Date.now()}`,
+            type: type,
+            colSpan: template.defaultCol,
+            rowSpan: template.defaultRow
+        };
+        setLayout(prev => [...prev, newWidget]);
+    };
+
+    const resizeWidget = (id: string, deltaCol: number, deltaRow: number) => {
+        setLayout(prev => prev.map(w => {
+            if (w.id !== id) return w;
+            const newCol = Math.max(3, Math.min(12, w.colSpan + deltaCol));
+            const newRow = Math.max(4, Math.min(12, w.rowSpan + deltaRow));
+            return { ...w, colSpan: newCol, rowSpan: newRow };
+        }));
+    };
+
+    const moveWidget = (index: number, direction: 'left' | 'right') => {
+        if (direction === 'left' && index > 0) {
+            const newLayout = [...layout];
+            [newLayout[index], newLayout[index - 1]] = [newLayout[index - 1], newLayout[index]];
+            setLayout(newLayout);
+        } else if (direction === 'right' && index < layout.length - 1) {
+            const newLayout = [...layout];
+            [newLayout[index], newLayout[index + 1]] = [newLayout[index + 1], newLayout[index]];
+            setLayout(newLayout);
+        }
+    };
+
+    const resetLayout = () => {
+        if (confirm('Reset layout to default?')) {
+            setLayout(INITIAL_LAYOUT);
+        }
+    };
+
+    // --- RENDERERS ---
+
+    const renderWidgetContent = (type: WidgetType) => {
+        switch (type) {
+            case 'MARKET': return <MarketWidget limit={10} />;
+            case 'NEWS': return <NewsWidget limit={8} />;
+            case 'CHART': return <ChartWidget symbol="BINANCE:BTCUSDT" />;
+            case 'CHAT': return <DashboardChatWidget />;
+            case 'BROWSER': return <BrowserWidget />;
+            default: return null;
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#0a0a0f] text-white font-sans selection:bg-blue-500 selection:text-black overflow-hidden relative flex flex-col">
 
-            {/* Background Elements */}
+            {/* Background */}
             <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] right-[-5%] w-[40vw] h-[40vw] bg-blue-900/10 rounded-full blur-[100px]"></div>
-                <div className="absolute bottom-[-10%] left-[-5%] w-[40vw] h-[40vw] bg-violet-900/10 rounded-full blur-[100px]"></div>
                 <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]"></div>
             </div>
 
-            {/* Header */}
+            {/* Header / Toolbar */}
             <header className="relative z-20 shrink-0 h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#0a0a0f]/80 backdrop-blur-md">
                 <div className="flex items-center gap-4">
                     <h1 className="text-xl font-thin tracking-tight">
                         TERMINAL <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-500">HUB</span>
                     </h1>
-                    <span className="hidden md:inline-block px-2 py-0.5 rounded text-[10px] font-mono text-gray-500 bg-white/5 border border-white/5">v2.1.0-beta</span>
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-[10px] text-emerald-500 bg-emerald-900/10 px-2 py-1 rounded-full border border-emerald-500/20">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
-                        <span className="hidden sm:inline font-mono uppercase">System Online</span>
-                    </div>
+
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsEditing(!isEditing)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all border ${isEditing ? 'bg-blue-600 border-blue-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
+                    >
+                        {isEditing ? 'DONE EDITING' : 'CUSTOMIZE'}
+                    </button>
+                    {isEditing && (
+                        <button onClick={resetLayout} className="text-xs text-red-400 hover:text-red-300 px-2">Reset</button>
+                    )}
                 </div>
             </header>
 
-            {/* Main Content Grid */}
+            {/* Widget Grid */}
             <motion.main
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="relative z-10 flex-1 p-6 grid grid-cols-12 grid-rows-12 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full"
+                layout
+                className="relative z-10 flex-1 p-4 md:p-6 grid grid-cols-1 md:grid-cols-12 auto-rows-[60px] gap-4 md:gap-6 overflow-y-auto custom-scrollbar content-start"
             >
-                {/* 1. Market Overview (Left Column - Top) */}
-                <motion.div variants={itemVariants} className="col-span-12 md:col-span-3 row-span-6 relative group rounded-2xl overflow-hidden border border-white/10 bg-[#121218]">
-                    <Link href="/prices" className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 pointer-events-auto">
-                        Full Market View
-                    </Link>
-                    <MarketWidget limit={8} />
-                </motion.div>
+                <AnimatePresence>
+                    {layout.map((widget, index) => (
+                        <motion.div
+                            layout
+                            key={widget.id}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            transition={{ duration: 0.2 }}
+                            className={`relative group rounded-2xl overflow-hidden border bg-[#121218] ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/10'}`}
+                            style={{
+                                gridColumn: isMobile ? 'span 1' : `span ${widget.colSpan}`,
+                                gridRow: isMobile ? 'auto' : `span ${widget.rowSpan}`,
+                                minHeight: isMobile ? '300px' : 'auto'
+                            }}
+                        >
+                            {/* Widget Content */}
+                            <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
+                                {renderWidgetContent(widget.type)}
+                            </div>
 
-                {/* 2. News Feed (Left Column - Bottom) */}
-                <motion.div variants={itemVariants} className="col-span-12 md:col-span-3 row-span-6 relative group rounded-2xl overflow-hidden border border-white/10 bg-[#121218]">
-                    <div className="absolute inset-x-0 bottom-0 top-auto z-20 p-4 bg-gradient-to-t from-[#121218] to-transparent h-24 flex items-end justify-center pointer-events-none"></div>
-                    <Link href="/news" className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 pointer-events-auto">
-                        Read All News
-                    </Link>
-                    <NewsWidget limit={6} />
-                </motion.div>
+                            {/* Edit Overlays */}
+                            {isEditing && (
+                                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
 
-                {/* 3. Main Chart Area (Center) */}
-                <motion.div variants={itemVariants} className="col-span-12 md:col-span-6 row-span-8 relative group rounded-2xl overflow-hidden border border-white/10 bg-[#121218]">
-                    <ChartWidget symbol="BINANCE:BTCUSDT" />
-                    <Link href="/dashboard" className="absolute top-4 right-4 z-30 p-2 bg-black/50 hover:bg-blue-600/80 text-white rounded-lg backdrop-blur-sm border border-white/10 transition-colors" title="Open Trading Terminal">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15.75 9m-9 10.5h4.5m-4.5 0v-4.5m0 4.5L9 15.75M20.25 20.25v-4.5m0 4.5h-4.5m4.5 0L15.75 15.75" />
-                        </svg>
-                    </Link>
-                </motion.div>
+                                    {/* Move Controls */}
+                                    <div className="absolute top-2 left-2 flex gap-1">
+                                        <button onClick={() => moveWidget(index, 'left')} disabled={index === 0} className="p-1.5 bg-white/10 hover:bg-white/20 rounded disabled:opacity-30">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                        </button>
+                                        <button onClick={() => moveWidget(index, 'right')} disabled={index === layout.length - 1} className="p-1.5 bg-white/10 hover:bg-white/20 rounded disabled:opacity-30">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                        </button>
+                                    </div>
 
-                {/* 4. Browser Widget (Center - Bottom) */}
-                <motion.div variants={itemVariants} className="col-span-12 md:col-span-6 row-span-4 relative group rounded-2xl overflow-hidden border border-white/10 bg-[#121218]">
-                    <BrowserWidget />
-                </motion.div>
+                                    {/* Delete */}
+                                    <button
+                                        onClick={() => removeWidget(widget.id)}
+                                        className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
 
-                {/* 5. AI Chat (Right Column) */}
-                <motion.div variants={itemVariants} className="col-span-12 md:col-span-3 row-span-12 relative rounded-2xl overflow-hidden border border-white/10 bg-[#121218]">
-                    <DashboardChatWidget />
-                </motion.div>
+                                    {/* Label */}
+                                    <span className="text-sm font-bold tracking-widest uppercase text-white mb-4 bg-black/50 px-3 py-1 rounded">
+                                        {widget.type}
+                                    </span>
 
+                                    {/* Resize Controls */}
+                                    <div className="flex items-center gap-4 bg-black/60 px-4 py-2 rounded-full border border-white/10">
+                                        <div className="flex flex-col items-center gap-1">
+                                            <span className="text-[9px] text-gray-400 uppercase">Width</span>
+                                            <div className="flex gap-1">
+                                                <button onClick={() => resizeWidget(widget.id, -1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
+                                                <span className="font-mono text-xs w-4 text-center">{widget.colSpan}</span>
+                                                <button onClick={() => resizeWidget(widget.id, 1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
+                                            </div>
+                                        </div>
+                                        <div className="w-px h-6 bg-white/10"></div>
+                                        <div className="flex flex-col items-center gap-1">
+                                            <span className="text-[9px] text-gray-400 uppercase">Height</span>
+                                            <div className="flex gap-1">
+                                                <button onClick={() => resizeWidget(widget.id, 0, -1)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
+                                                <span className="font-mono text-xs w-4 text-center">{widget.rowSpan}</span>
+                                                <button onClick={() => resizeWidget(widget.id, 0, 1)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            )}
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+
+                {/* Add New Widget Placeholder */}
+                {isEditing && (
+                    <div className="col-span-12 md:col-span-3 row-span-4 min-h-[200px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-600/5 transition-all group">
+                        <span className="text-xs text-gray-500 group-hover:text-blue-400 font-bold uppercase tracking-widest">Add Widget</span>
+                        <div className="flex flex-wrap justify-center gap-2 px-4">
+                            {AVAILABLE_WIDGETS.map(w => (
+                                <button
+                                    key={w.type}
+                                    onClick={() => addWidget(w.type)}
+                                    className="px-3 py-1.5 bg-white/5 hover:bg-blue-600 hover:text-white text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded border border-white/5 transition-colors"
+                                >
+                                    + {w.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </motion.main>
         </div>
     );
