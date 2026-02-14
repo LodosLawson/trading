@@ -7,6 +7,9 @@ interface NewsItem {
     source: string;
     published_at: string;
     url: string;
+    impact_score?: number;
+    reasoning?: string;
+    affected_assets?: string[];
 }
 
 export default function NewsWidget({ limit }: { limit?: number }) {
@@ -75,9 +78,32 @@ export default function NewsWidget({ limit }: { limit?: number }) {
                                     </span>
                                     <span className="text-[10px] text-gray-500 font-mono">{timeAgo(item.published_at)}</span>
                                 </div>
-                                <h4 className="text-sm font-medium text-gray-200 leading-snug group-hover:text-blue-200 transition-colors">
+                                <h4 className="text-sm font-medium text-gray-200 leading-snug group-hover:text-blue-200 transition-colors mb-2">
                                     {item.title}
                                 </h4>
+
+                                {/* AI Analysis Badge */}
+                                {item.impact_score !== undefined && (
+                                    <div className={`mt-2 p-2 rounded-lg border ${item.impact_score > 0 ? 'bg-emerald-500/10 border-emerald-500/20' : item.impact_score < 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-gray-500/10 border-gray-500/20'}`}>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className={`text-[10px] font-bold uppercase ${item.impact_score > 0 ? 'text-emerald-400' : item.impact_score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                                                AI Impact: {item.impact_score > 0 ? '+' : ''}{item.impact_score}
+                                            </span>
+                                            {item.affected_assets && (
+                                                <div className="flex gap-1">
+                                                    {item.affected_assets.map(asset => (
+                                                        <span key={asset} className="text-[9px] px-1 rounded bg-white/5 text-gray-400">{asset}</span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {item.reasoning && (
+                                            <p className="text-[10px] text-gray-400 leading-relaxed">
+                                                {item.reasoning}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                             </a>
                         ))}
                     </div>
