@@ -12,7 +12,7 @@ interface Coin {
     price_change_percentage_24h: number;
 }
 
-export default function MarketWidget({ onSelectSymbol }: { onSelectSymbol?: (symbol: string) => void }) {
+export default function MarketWidget({ onSelectSymbol, limit }: { onSelectSymbol?: (symbol: string) => void, limit?: number }) {
     const [coins, setCoins] = useState<Coin[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -61,8 +61,8 @@ export default function MarketWidget({ onSelectSymbol }: { onSelectSymbol?: (sym
                     </div>
                 ) : (
                     <div className="divide-y divide-white/5">
-                        {coins.map((coin) => (
-                            <button
+                        {(limit ? coins.slice(0, limit) : coins).map((coin) => (
+                            <motion.button
                                 key={coin.id}
                                 onClick={() => onSelectSymbol?.(`BINANCE:${coin.symbol.toUpperCase()}USDT`)}
                                 className="w-full grid grid-cols-3 items-center px-4 py-3 hover:bg-white/[0.04] transition-colors text-left group"
@@ -80,13 +80,13 @@ export default function MarketWidget({ onSelectSymbol }: { onSelectSymbol?: (sym
 
                                 <div className="text-right flex justify-end">
                                     <div className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${coin.price_change_percentage_24h >= 0
-                                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                            : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
                                         }`}>
                                         {coin.price_change_percentage_24h >= 0 ? '+' : ''}{coin.price_change_percentage_24h.toFixed(2)}%
                                     </div>
                                 </div>
-                            </button>
+                            </motion.button>
                         ))}
                     </div>
                 )}

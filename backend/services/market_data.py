@@ -1,6 +1,13 @@
 import os
 import requests
+import time
 from typing import Dict, List, Any
+
+# Simple In-Memory Cache for AI Context
+_price_cache = {
+    "data": [],
+    "last_updated": 0
+}
 
 # Mock Data for Prototype (Fallback)
 MOCK_INSIGHTS = [
@@ -127,3 +134,39 @@ def fetch_crypto_prices(vs_currency: str = "usd", per_page: int = 100) -> List[D
     except Exception as e:
         print(f"CoinGecko Error: {e}")
         return []
+
+def get_market_context_string() -> str:
+    """
+    Returns a formatted string of current market prices for the AI context.
+    Uses a 60-second cache to avoid hitting rate limits.
+    """
+    global _price_cache
+    
+    # Check cache (60s TTL)
+    if time.time() - _price_cache["last_updated"] < 60 and _price_cache["data"]:
+        coins = _price_cache["data"]
+    else:
+        # Fetch fresh data (top 20 is enough for context)
+        # Note: We use the existing fetch_crypto_prices function
+        coins = fetch_crypto_prices(per_page=20)
+        if coins:
+            _price_cache["data"] = coins
+            _price_cache["last_updated"] = time.time()
+    
+    if not coins:
+        return "Market data unavailable."
+
+    # Format: "BTC: $95000 (+2.5%), ETH: $2800 (-1.2%)..."
+    context_parts = []
+    for coin in coins:
+        symbol = coin.get('symbol', '???')
+        price = coin.get('current_price')
+        change = coin.get('price_change_percentage_24h')
+        
+        # Handle potential None values safely
+        if price is not None:
+            price_str = f"${price:,.2f}"
+            change_str = f"{change:+.2f}%" if change is not None else "0%"
+            context_parts.append(f"{symbol}: {price_str} ({change_str})")
+        
+    return ", ".join(context_parts)

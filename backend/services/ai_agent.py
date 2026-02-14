@@ -75,12 +75,19 @@ def analyze_market_news(headline: str, context: str = "") -> Dict[str, Any]:
 
 chat_session = model.start_chat(history=[])
 
-def chat_with_finance_expert(user_message: str) -> str:
+def chat_with_finance_expert(user_message: str, context: str = "") -> str:
     """
     Interactive chat function for the user to talk to the Finance Expert.
     """
     try:
-        response = chat_session.send_message(user_message)
+        if context:
+            # Inject context invisibly to the user's query
+            system_injection = f"[REAL-TIME MARKET CONTEXT]: {context}\n\n"
+            full_prompt = system_injection + user_message
+            response = chat_session.send_message(full_prompt)
+        else:
+            response = chat_session.send_message(user_message)
+            
         return response.text
     except Exception as e:
         return f"System Error: {e}"

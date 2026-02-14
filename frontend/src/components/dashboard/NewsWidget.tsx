@@ -9,7 +9,7 @@ interface NewsItem {
     url: string;
 }
 
-export default function NewsWidget() {
+export default function NewsWidget({ limit }: { limit?: number }) {
     const [news, setNews] = useState<NewsItem[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -19,7 +19,7 @@ export default function NewsWidget() {
                 const res = await fetch('/api/crypto-news');
                 if (res.ok) {
                     const data = await res.json();
-                    setNews(data.slice(0, 10)); // Limit to 10 for widget
+                    setNews(data.slice(0, limit || 10)); // Limit to prop or default 10
                 }
             } catch (error) {
                 console.error(error);

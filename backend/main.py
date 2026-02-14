@@ -82,7 +82,10 @@ def chat_with_expert(request: ChatRequest):
     """
     Chat with the AI Finance Expert.
     """
-    response = ai_agent.chat_with_finance_expert(request.message)
+    # Fetch real-time context
+    context = market_data.get_market_context_string()
+    
+    response = ai_agent.chat_with_finance_expert(request.message, context=context)
     return {"reply": response}
 
 @app.get("/api/news")
