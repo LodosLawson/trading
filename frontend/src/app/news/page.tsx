@@ -16,6 +16,11 @@ interface CryptoNewsItem {
     currencies: Array<{ code: string; title: string }>;
 }
 
+interface NewsPageProps {
+    // ...
+}
+
+
 interface MarketSummary {
     sentiment: string;
     signal: string;
@@ -26,7 +31,9 @@ interface AIAnalysis {
     loading: boolean;
     result: string | null;
     symbols: string[];
+    targetUrl?: string;
 }
+
 
 interface SymbolPrice {
     id: string;
@@ -172,8 +179,9 @@ export default function NewsPage() {
     const [news, setNews] = useState<CryptoNewsItem[]>([]);
     const [summary, setSummary] = useState<MarketSummary | null>(null);
     const [loading, setLoading] = useState(true);
-    const [analyses, setAnalyses] = useState<Record<number, AIAnalysis>>({});
-    const [priceMap, setPriceMap] = useState<Record<string, SymbolPrice>>({});
+    const [selectedBrowserUrl, setSelectedBrowserUrl] = useState<string>('');
+    const [prices, setPrices] = useState<Record<string, SymbolPrice>>({});
+    const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis>({ loading: false, result: null, symbols: [] });
     const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [watchlist, setWatchlist] = useState<string[]>([]);
@@ -264,7 +272,7 @@ export default function NewsPage() {
             for (const c of coins) {
                 map[c.symbol.toUpperCase()] = c;
             }
-            setPriceMap(map);
+            setPrices(map);
         } catch { /* silent */ }
     }, []);
 
@@ -273,8 +281,8 @@ export default function NewsPage() {
     }, [fetchPricesForSymbols]);
 
     // Auto-analyze a news article
-    const analyzeArticle = async (index: number, item: CryptoNewsItem) => {
-        setAnalyses(prev => ({ ...prev, [index]: { loading: true, result: null, symbols: [] } }));
+    const analyzeArticle = async (item: CryptoNewsItem) => {
+        setAiAnalysis({ loading: true, result: null, symbols: [], targetUrl: item.url });
 
         try {
             const prompt = `Analyze this crypto news for trading impact. Output format:
@@ -300,15 +308,9 @@ Mentioned currencies: ${item.currencies.map(c => c.code).join(', ') || 'None spe
             const aiSymbols: string[] = (reply.match(symbolRegex) || []).map((s: string) => s.toUpperCase());
             const allSymbols: string[] = [...new Set<string>([...articleSymbols, ...aiSymbols])];
 
-            setAnalyses(prev => ({
-                ...prev,
-                [index]: { loading: false, result: reply, symbols: allSymbols }
-            }));
+            setAiAnalysis({ loading: false, result: reply, symbols: allSymbols, targetUrl: item.url });
         } catch {
-            setAnalyses(prev => ({
-                ...prev,
-                [index]: { loading: false, result: 'Analysis unavailable.', symbols: item.currencies.map(c => c.code.toUpperCase()) }
-            }));
+            setAiAnalysis({ loading: false, result: 'Analysis unavailable.', symbols: item.currencies.map(c => c.code.toUpperCase()), targetUrl: item.url });
         }
     };
 
@@ -456,9 +458,10 @@ Mentioned currencies: ${item.currencies.map(c => c.code).join(', ') || 'None spe
                     /* ── News Cards ─── */
                     <div className="space-y-4">
                         {filteredNews.map((item, index) => {
-                            const analysis = analyses[index];
-                            const hasAnalysis = analysis?.result;
-                            const symbols = analysis?.symbols || item.currencies.map(c => c.code.toUpperCase());
+                            const isAnalyzed = aiAnalysis.targetUrl === item.url;
+                            const hasAnalysis = isAnalyzed && aiAnalysis?.result;
+                            const isLoading = isAnalyzed && aiAnalysis.loading;
+                            const symbols = (isAnalyzed && aiAnalysis?.symbols) || item.currencies.map(c => c.code.toUpperCase());
 
                             return (
                                 <motion.div
@@ -492,7 +495,7 @@ Mentioned currencies: ${item.currencies.map(c => c.code).join(', ') || 'None spe
                                                     <SymbolChip
                                                         key={i}
                                                         symbol={c.code.toUpperCase()}
-                                                        priceData={priceMap[c.code.toUpperCase()] || null}
+                                                        priceData={prices[c.code.toUpperCase()] || null}
                                                         onTap={setSelectedSymbol}
                                                     />
                                                 ))}
@@ -522,11 +525,11 @@ Mentioned currencies: ${item.currencies.map(c => c.code).join(', ') || 'None spe
                                             </div>
 
                                             <button
-                                                onClick={() => analyzeArticle(index, item)}
-                                                disabled={analysis?.loading}
+                                                onClick={() => analyzeArticle(item)}
+                                                disabled={isLoading}
                                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-xs font-medium rounded-lg border border-blue-500/20 hover:border-blue-500/40 transition-all disabled:opacity-50 active:scale-95"
                                             >
-                                                {analysis?.loading ? (
+                                                {isLoading ? (
                                                     <>
                                                         <span className="w-3 h-3 border-t border-blue-300 rounded-full animate-spin"></span>
                                                         Analyzing...
@@ -571,7 +574,7 @@ Mentioned currencies: ${item.currencies.map(c => c.code).join(', ') || 'None spe
 
                                                     {/* AI Text */}
                                                     <p className="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-wrap mb-3">
-                                                        {analysis.result}
+                                                        {aiAnalysis.result}
                                                     </p>
 
                                                     {/* Affected Symbols with Charts */}
@@ -583,7 +586,7 @@ Mentioned currencies: ${item.currencies.map(c => c.code).join(', ') || 'None spe
                                                                     <SymbolChip
                                                                         key={i}
                                                                         symbol={sym}
-                                                                        priceData={priceMap[sym] || null}
+                                                                        priceData={prices[sym] || null}
                                                                         onTap={setSelectedSymbol}
                                                                     />
                                                                 ))}
@@ -612,7 +615,7 @@ Mentioned currencies: ${item.currencies.map(c => c.code).join(', ') || 'None spe
                 {selectedSymbol && (
                     <SymbolDetail
                         symbol={selectedSymbol}
-                        priceData={priceMap[selectedSymbol] || null}
+                        priceData={prices[selectedSymbol] || null}
                         onClose={() => setSelectedSymbol(null)}
                     />
                 )}
