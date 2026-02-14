@@ -28,15 +28,17 @@ export default function BrowserWidget({ defaultUrl }: { defaultUrl?: string }) {
 
         setIsLoading(true);
         let target = searchQuery;
+
+        // If it's a search term (no dot, no protocol), use Bing (more iframe friendly)
         if (!target.includes('.') && !target.startsWith('http')) {
-            target = `https://www.google.com/search?q=${encodeURIComponent(target)}&igu=1`; // igu=1 allows some google framing
+            target = `https://www.bing.com/search?q=${encodeURIComponent(target)}`;
         } else if (!target.startsWith('http')) {
             target = `https://${target}`;
         }
 
         setUrl(target);
         setHistory(prev => [target, ...prev].slice(0, 10));
-        setTimeout(() => setIsLoading(false), 1000); // Reset loading after a delay
+        setTimeout(() => setIsLoading(false), 2000);
     };
 
     const toggleWidget = () => {
@@ -99,7 +101,7 @@ export default function BrowserWidget({ defaultUrl }: { defaultUrl?: string }) {
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search or enter URL..."
+                                    placeholder="Search (Bing) or URL..."
                                     className="w-full bg-[#050508] text-white text-xs sm:text-sm rounded-lg py-1.5 pl-8 pr-8 border border-white/10 focus:outline-none focus:border-blue-500/50 transition-colors font-mono"
                                 />
                                 {url && (
@@ -131,7 +133,8 @@ export default function BrowserWidget({ defaultUrl }: { defaultUrl?: string }) {
                                     src={url}
                                     title="Browser View"
                                     className="w-full h-full border-none"
-                                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
+                                    referrerPolicy="no-referrer"
                                     onError={() => setIsLoading(false)}
                                     onLoad={() => setIsLoading(false)}
                                 />
@@ -139,15 +142,15 @@ export default function BrowserWidget({ defaultUrl }: { defaultUrl?: string }) {
                                 <div className="flex flex-col items-center justify-center h-full bg-[#121218] text-gray-400 space-y-6">
                                     <div className="text-center">
                                         <h3 className="text-2xl font-black tracking-widest text-white mb-2">NEBULA<span className="text-blue-500">BROWSER</span></h3>
-                                        <p className="text-xs text-gray-600 uppercase tracking-widest">Secure In-App Navigation</p>
+                                        <p className="text-xs text-gray-600 uppercase tracking-widest">Embedded Web Gateway</p>
                                     </div>
 
                                     <div className="grid grid-cols-4 gap-6 px-8">
                                         {[
-                                            { name: 'Google', url: 'https://www.google.com/search?igu=1' },
-                                            { name: 'News', url: 'https://cryptonews.com' },
-                                            { name: 'CoinGecko', url: 'https://www.coingecko.com' },
-                                            { name: 'TradingView', url: 'https://www.tradingview.com' }
+                                            { name: 'Bing', url: 'https://www.bing.com/search?q=crypto' },
+                                            { name: 'Wifi', url: 'https://fast.com' },
+                                            { name: 'Wikipedia', url: 'https://www.wikipedia.org' },
+                                            { name: 'Docs', url: 'https://devdocs.io' }
                                         ].map(site => (
                                             <button
                                                 key={site.name}
@@ -161,21 +164,9 @@ export default function BrowserWidget({ defaultUrl }: { defaultUrl?: string }) {
                                             </button>
                                         ))}
                                     </div>
-                                </div>
-                            )}
 
-                            {/* Overlay for blocked sites hint */}
-                            {url && (
-                                <div className="absolute bottom-4 right-4 pointer-events-none">
-                                    <div className="px-3 py-2 bg-black/80 backdrop-blur text-[10px] text-gray-400 rounded-lg border border-white/10 max-w-[200px] text-center">
-                                        If site fails to load, click the <span className="text-white">External Link</span> icon in the bar.
+                                    <div className="mt-8 px-6 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-[10px] text-yellow-500/80 text-center max-w-xs">
+                                        Note: Many sites (Google, Twitter) block embedding. Use the ↗ icon to open them externally.
                                     </div>
                                 </div>
                             )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </>
-    );
-}

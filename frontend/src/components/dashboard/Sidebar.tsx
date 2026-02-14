@@ -21,7 +21,7 @@ export default function Sidebar() {
     const isActive = (path: string) => pathname === path;
 
     return (
-        <aside className="relative z-50 w-16 border-r border-white/5 bg-[#0a0a0f]/90 backdrop-blur flex flex-col items-center py-6 h-screen sticky top-0">
+        <aside className="hidden md:flex relative z-50 w-16 border-r border-white/5 bg-[#0a0a0f]/90 backdrop-blur flex-col items-center py-6 h-screen sticky top-0">
             {/* Logo / Brand */}
             <div className="mb-8 p-2 bg-blue-600 rounded-lg shadow-[0_0_15px_rgba(37,99,235,0.3)]">
                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
