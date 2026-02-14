@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import ChatWidget from '@/components/ui/ChatWidget';
-import BrowserWidget from '@/components/ui/BrowserWidget';
+import BrowserWidget from '@/components/dashboard/BrowserWidget';
 
 /* ── Types ───────────────────────────────────────── */
 interface CryptoNewsItem {
