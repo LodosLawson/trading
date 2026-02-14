@@ -54,7 +54,18 @@ export default function TradingPanel({ symbol }: TradingPanelProps) {
 
     // ... (keep fetchPrice effect)
 
-    // ... (keep handlePercentage)
+    // ... (keep fetchPrice effect)
+
+    const handlePercentage = (pct: number) => {
+        if (price <= 0) return;
+        if (side === 'buy') {
+            const maxBuy = (balance * pct) / price;
+            setAmount(maxBuy.toFixed(6));
+        } else {
+            const owned = portfolio[baseAsset]?.quantity || 0;
+            setAmount((owned * pct).toFixed(6));
+        }
+    };
 
     const handleTrade = () => {
         const qty = parseFloat(amount);
@@ -283,8 +294,8 @@ export default function TradingPanel({ symbol }: TradingPanelProps) {
                                     onClick={handleTrade}
                                     disabled={loading || price <= 0}
                                     className={`w-full py-3 rounded-lg text-sm font-bold uppercase tracking-wider shadow-lg transform transition-all active:scale-[0.98] ${side === 'buy'
-                                            ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-900/20'
-                                            : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-red-900/20'
+                                        ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-900/20'
+                                        : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-red-900/20'
                                         }`}
                                 >
                                     {loading ? 'Executing...' : `${side.toUpperCase()} ${baseAsset}`}
