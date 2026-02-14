@@ -170,3 +170,19 @@ export default function BrowserWidget({ defaultUrl }: { defaultUrl?: string }) {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Overlay for blocked sites hint */}
+                            {url && (
+                                <div className="absolute bottom-4 right-4 pointer-events-none">
+                                    <div className="px-3 py-2 bg-black/80 backdrop-blur text-[10px] text-gray-400 rounded-lg border border-white/10 max-w-[200px] text-center">
+                                        If site fails to load, click the <span className="text-white">External Link</span> icon in the bar.
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>
+    );
+}
