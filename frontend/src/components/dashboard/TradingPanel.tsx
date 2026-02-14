@@ -3,20 +3,26 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+interface PortfolioItem {
+    quantity: number;
+    avgPrice: number;
+}
+
 interface Portfolio {
-    [symbol: string]: number; // Quantity
+    [symbol: string]: PortfolioItem;
 }
 
 interface TradingPanelProps {
     symbol: string; // e.g., "BINANCE:BTCUSDT"
-    currentPrice?: number; // Optional, if we can pass it. If not, we might need to fetch it or simulate it.
 }
 
 export default function TradingPanel({ symbol }: TradingPanelProps) {
     const [balance, setBalance] = useState(100000); // Default $100k demo
     const [portfolio, setPortfolio] = useState<Portfolio>({});
     const [amount, setAmount] = useState('');
-    const [mode, setMode] = useState<'buy' | 'sell'>('buy');
+    const [orderType, setOrderType] = useState<'limit' | 'market'>('market');
+    const [side, setSide] = useState<'buy' | 'sell'>('buy');
+    const [limitPrice, setLimitPrice] = useState('');
     const [price, setPrice] = useState<number>(0);
     const [loading, setLoading] = useState(false);
     const [notification, setNotification] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
@@ -26,180 +32,254 @@ export default function TradingPanel({ symbol }: TradingPanelProps) {
 
     // Persist/Load state
     useEffect(() => {
-        const savedBalance = localStorage.getItem('demo_balance');
-        const savedPortfolio = localStorage.getItem('demo_portfolio');
+        const savedBalance = localStorage.getItem('demo_balance_v2');
+        const savedPortfolio = localStorage.getItem('demo_portfolio_v2');
         if (savedBalance) setBalance(parseFloat(savedBalance));
         if (savedPortfolio) setPortfolio(JSON.parse(savedPortfolio));
     }, []);
 
     useEffect(() => {
-        localStorage.setItem('demo_balance', balance.toString());
-        localStorage.setItem('demo_portfolio', JSON.stringify(portfolio));
+        localStorage.setItem('demo_balance_v2', balance.toString());
+        localStorage.setItem('demo_portfolio_v2', JSON.stringify(portfolio));
     }, [balance, portfolio]);
 
-    // Fetch price (simulated or real)
+    // Fetch price
     useEffect(() => {
-        // In a real app we'd use a websocket or the passed prop.
-        // Here we'll just fetch from our internal API for the base asset
         const fetchPrice = async () => {
             try {
-                // Determine ID from symbol map or search. 
-                // Simplified: Search by symbol name
+                // Simplified price fetch - ideally use websocket or prop
                 const res = await fetch(`/api/search?q=${baseAsset}`);
                 const data = await res.json();
                 if (data && data.length > 0) {
-                    // Get price for the first match (likely the correct coin)
-                    // We need a price endpoint. Let's use the chart endpoint for latest price as a proxy
                     const id = data[0].id;
                     const priceRes = await fetch(`/api/chart?id=${id}&days=1&type=line`);
                     const priceData = await priceRes.json();
                     if (priceData.prices && priceData.prices.length > 0) {
-                        setPrice(priceData.prices[priceData.prices.length - 1][1]);
+                        const current = priceData.prices[priceData.prices.length - 1][1];
+                        setPrice(current);
+                        if (!limitPrice) setLimitPrice(current.toString());
                     }
                 }
             } catch (e) { console.error(e); }
         };
         fetchPrice();
-        const interval = setInterval(fetchPrice, 10000);
+        const interval = setInterval(fetchPrice, 5000); // Faster polling for "Pro" feel
         return () => clearInterval(interval);
     }, [baseAsset]);
 
+    const handlePercentage = (pct: number) => {
+        if (price <= 0) return;
+        if (side === 'buy') {
+            const maxBuy = (balance * pct) / price;
+            setAmount(maxBuy.toFixed(6));
+        } else {
+            const owned = portfolio[baseAsset]?.quantity || 0;
+            setAmount((owned * pct).toFixed(6));
+        }
+    };
+
     const handleTrade = () => {
-        const val = parseFloat(amount);
-        if (isNaN(val) || val <= 0) {
-            setNotification({ msg: 'Invalid amount', type: 'error' });
+        const qty = parseFloat(amount);
+        const execPrice = orderType === 'limit' && parseFloat(limitPrice) > 0 ? parseFloat(limitPrice) : price;
+
+        if (isNaN(qty) || qty <= 0) {
+            setNotification({ msg: 'Invalid quantity', type: 'error' });
             return;
         }
-        if (price <= 0) {
-            setNotification({ msg: 'Fetching price...', type: 'error' });
+        if (execPrice <= 0) {
+            setNotification({ msg: 'Invalid price', type: 'error' });
             return;
         }
 
         setLoading(true);
+        // Simulate network delay
         setTimeout(() => {
-            if (mode === 'buy') {
-                const cost = val * price; // We treat 'amount' as Quantity for simplicity? Or USDT value? 
-                // Let's say Input is usually Quantity in TradingView, but beginners think in USD.
-                // Let's make Input = USD Amount for "Buy", and Quantity for "Sell" to be intuitive?
-                // Actually, let's stick to standard: Input is Quantity.
-
-                const totalCost = val * price;
+            if (side === 'buy') {
+                const totalCost = qty * execPrice;
                 if (totalCost > balance) {
                     setNotification({ msg: 'Insufficient funds', type: 'error' });
                 } else {
                     setBalance(prev => prev - totalCost);
-                    setPortfolio(prev => ({ ...prev, [baseAsset]: (prev[baseAsset] || 0) + val }));
-                    setNotification({ msg: `Bought ${val} ${baseAsset}`, type: 'success' });
+                    setPortfolio(prev => {
+                        const current = prev[baseAsset] || { quantity: 0, avgPrice: 0 };
+                        const newQty = current.quantity + qty;
+                        const newAvg = ((current.quantity * current.avgPrice) + (qty * execPrice)) / newQty;
+                        return { ...prev, [baseAsset]: { quantity: newQty, avgPrice: newAvg } };
+                    });
+                    setNotification({ msg: `Bought ${qty} ${baseAsset} @ ${execPrice.toFixed(2)}`, type: 'success' });
                     setAmount('');
                 }
             } else {
                 // Sell
-                const owned = portfolio[baseAsset] || 0;
-                if (val > owned) {
+                const current = portfolio[baseAsset] || { quantity: 0, avgPrice: 0 };
+                if (qty > current.quantity) {
                     setNotification({ msg: `Insufficient ${baseAsset}`, type: 'error' });
                 } else {
-                    const revenue = val * price;
+                    const revenue = qty * execPrice;
                     setBalance(prev => prev + revenue);
-                    setPortfolio(prev => ({ ...prev, [baseAsset]: prev[baseAsset] - val }));
-                    setNotification({ msg: `Sold ${val} ${baseAsset}`, type: 'success' });
+                    setPortfolio(prev => {
+                        const newQty = current.quantity - qty;
+                        if (newQty <= 0.000001) {
+                            const newP = { ...prev };
+                            delete newP[baseAsset];
+                            return newP;
+                        }
+                        return { ...prev, [baseAsset]: { ...current, quantity: newQty } };
+                    });
+                    setNotification({ msg: `Sold ${qty} ${baseAsset} @ ${execPrice.toFixed(2)}`, type: 'success' });
                     setAmount('');
                 }
             }
             setLoading(false);
             setTimeout(() => setNotification(null), 3000);
-        }, 800);
+        }, 600);
     };
 
+    // Calculate PnL
+    const assetData = portfolio[baseAsset];
+    const pnl = assetData ? (price - assetData.avgPrice) * assetData.quantity : 0;
+    const pnlPct = assetData ? ((price - assetData.avgPrice) / assetData.avgPrice) * 100 : 0;
+
     return (
-        <div className="h-full bg-[#1a1a20] border border-white/5 rounded-xl overflow-hidden flex flex-col relative">
-            {/* Header */}
-            <div className="p-3 border-b border-white/5 flex justify-between items-center bg-[#0a0a0f]/50">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Trade Simulator</span>
-                <div className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                    Demo Mode
+        <div className="h-full bg-[#121218] border border-white/5 rounded-xl overflow-hidden flex flex-col relative font-sans">
+            {/* Pro Header */}
+            <div className="shrink-0 p-3 border-b border-white/5 flex justify-between items-center bg-[#0a0a0f]">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-200">SPOT</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-400 font-mono">Demo</span>
+                </div>
+                <div className="flex gap-4 text-[10px] font-mono text-gray-400">
+                    <div>
+                        <span className="block text-gray-600">Avbl</span>
+                        <span className="text-white">{balance.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDT</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Price Display */}
-            <div className="px-4 py-3 bg-[#0a0a0f]/30">
-                <div className="flex justify-between items-baseline mb-1">
-                    <h2 className="text-xl font-bold text-white">{baseAsset}</h2>
-                    <span className="text-lg font-mono text-blue-400">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs text-gray-500">
-                    <span>Wallet Balance</span>
-                    <span className="font-mono text-white">${balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs text-gray-500 mt-1">
-                    <span>Owned</span>
-                    <span className="font-mono text-white">{(portfolio[baseAsset] || 0).toLocaleString()} {baseAsset}</span>
-                </div>
+            {/* Order Type Tabs */}
+            <div className="flex border-b border-white/5 bg-[#1a1a20]">
+                {['market', 'limit'].map((t) => (
+                    <button
+                        key={t}
+                        onClick={() => setOrderType(t as any)}
+                        className={`flex-1 py-2 text-[10px] uppercase font-bold tracking-wider transition-colors ${orderType === t ? 'text-amber-500 border-b-2 border-amber-500 bg-white/5' : 'text-gray-500 hover:text-gray-300'
+                            }`}
+                    >
+                        {t}
+                    </button>
+                ))}
             </div>
 
-            {/* Tabs */}
-            <div className="flex p-2 gap-2">
-                <button
-                    onClick={() => setMode('buy')}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${mode === 'buy' ? 'bg-emerald-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
-                >
-                    BUY
-                </button>
-                <button
-                    onClick={() => setMode('sell')}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${mode === 'sell' ? 'bg-red-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
-                >
-                    SELL
-                </button>
-            </div>
+            {/* Main Form */}
+            <div className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
 
-            {/* Input */}
-            <div className="p-4 space-y-4 flex-1">
+                {/* Side Toggle */}
+                <div className="flex bg-black/40 p-1 rounded-lg">
+                    <button
+                        onClick={() => setSide('buy')}
+                        className={`flex-1 py-1.5 rounded text-xs font-bold transition-all ${side === 'buy' ? 'bg-emerald-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                        Buy
+                    </button>
+                    <button
+                        onClick={() => setSide('sell')}
+                        className={`flex-1 py-1.5 rounded text-xs font-bold transition-all ${side === 'sell' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                        Sell
+                    </button>
+                </div>
+
+                {/* Price Input (Limit only) */}
+                <AnimatePresence>
+                    {orderType === 'limit' && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                        >
+                            <label className="text-[9px] uppercase text-gray-500 font-bold mb-1 block">Limit Price</label>
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    value={limitPrice}
+                                    onChange={(e) => setLimitPrice(e.target.value)}
+                                    className="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-3 py-2 text-right text-sm text-white font-mono focus:border-amber-500/50 outline-none transition-colors"
+                                />
+                                <span className="absolute left-3 top-2 text-xs text-gray-600">USDT</span>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Amount Input */}
                 <div>
-                    <label className="block text-[10px] text-gray-500 uppercase font-bold mb-1">Quantity ({baseAsset})</label>
+                    <label className="flex justify-between text-[9px] uppercase text-gray-500 font-bold mb-1">
+                        <span>Amount</span>
+                        <span>{baseAsset}</span>
+                    </label>
                     <div className="relative">
                         <input
                             type="number"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                             placeholder="0.00"
-                            className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-3 text-white font-mono focus:outline-none focus:border-blue-500/50"
+                            className="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-3 py-2 text-right text-sm text-white font-mono focus:border-amber-500/50 outline-none transition-colors"
                         />
+                    </div>
+                </div>
+
+                {/* Percentage Buttons */}
+                <div className="grid grid-cols-4 gap-1">
+                    {[0.25, 0.50, 0.75, 1].map((p) => (
                         <button
-                            onClick={() => setAmount(mode === 'buy' ? ((balance / price) * 0.99).toFixed(5) : (portfolio[baseAsset] || 0).toString())}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-blue-400 hover:text-white uppercase font-bold"
+                            key={p}
+                            onClick={() => handlePercentage(p)}
+                            className="bg-white/5 hover:bg-white/10 border border-white/5 rounded py-1 text-[9px] text-gray-400 font-mono transition-colors"
                         >
-                            Max
+                            {p * 100}%
                         </button>
-                    </div>
+                    ))}
                 </div>
 
-                <div className="text-center">
-                    <p className="text-[10px] text-gray-500 mb-1">Estimated Total</p>
-                    <div className="text-xl font-mono text-white">
-                        ${(parseFloat(amount || '0') * price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                {/* Order Summary & PnL */}
+                <div className="mt-auto space-y-2 pt-4 border-t border-white/5">
+                    <div className="flex justify-between text-[10px]">
+                        <span className="text-gray-500">Est. Total</span>
+                        <span className="text-white font-mono">
+                            ${(parseFloat(amount || '0') * (parseFloat(limitPrice) || price)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        </span>
                     </div>
+                    {assetData && (
+                        <div className="flex justify-between text-[10px]">
+                            <span className="text-gray-500">Unrealized PnL</span>
+                            <span className={`font-mono ${pnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} ({pnlPct.toFixed(2)}%)
+                            </span>
+                        </div>
+                    )}
                 </div>
 
+                {/* Submit Button */}
                 <button
                     onClick={handleTrade}
                     disabled={loading || price <= 0}
-                    className={`w-full py-4 rounded-xl font-bold text-sm text-white shadow-lg transition-all active:scale-95 ${mode === 'buy'
-                            ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20'
-                            : 'bg-red-600 hover:bg-red-500 shadow-red-900/20'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className={`w-full py-3 rounded-lg font-bold text-sm text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${side === 'buy' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-500'
+                        }`}
                 >
-                    {loading ? 'Processing...' : `${mode.toUpperCase()} ${baseAsset}`}
+                    {loading ? 'Executing...' : `${side.toUpperCase()} ${baseAsset}`}
                 </button>
+
             </div>
 
-            {/* Notification Toast */}
+            {/* Notification */}
             <AnimatePresence>
                 {notification && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className={`absolute bottom-4 left-4 right-4 p-3 rounded-lg text-center text-xs font-bold ${notification.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+                        exit={{ opacity: 0, y: 20 }}
+                        className={`absolute bottom-4 left-4 right-4 p-2 rounded text-center text-[10px] font-bold uppercase tracking-wider ${notification.type === 'success' ? 'bg-emerald-500 text-black' : 'bg-red-500 text-white'
                             }`}
                     >
                         {notification.msg}

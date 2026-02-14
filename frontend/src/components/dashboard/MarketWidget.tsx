@@ -44,28 +44,45 @@ export default function MarketWidget({ onSelectSymbol }: { onSelectSymbol?: (sym
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {/* Column Headers */}
+                <div className="grid grid-cols-3 px-4 py-2 bg-white/[0.02] border-b border-white/5 text-[9px] uppercase font-bold text-gray-500 tracking-wider">
+                    <div className="text-left">Symbol</div>
+                    <div className="text-right">Price</div>
+                    <div className="text-right">24h Change</div>
+                </div>
+
                 {loading ? (
-                    <div className="p-4 text-center text-xs text-gray-600">Loading...</div>
+                    <div className="p-8 flex justify-center">
+                        <div className="flex gap-1">
+                            <span className="w-1 h-1 bg-white/20 rounded-full animate-bounce"></span>
+                            <span className="w-1 h-1 bg-white/20 rounded-full animate-bounce delay-75"></span>
+                            <span className="w-1 h-1 bg-white/20 rounded-full animate-bounce delay-150"></span>
+                        </div>
+                    </div>
                 ) : (
                     <div className="divide-y divide-white/5">
                         {coins.map((coin) => (
                             <button
                                 key={coin.id}
                                 onClick={() => onSelectSymbol?.(`BINANCE:${coin.symbol.toUpperCase()}USDT`)}
-                                className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors text-left group"
+                                className="w-full grid grid-cols-3 items-center px-4 py-3 hover:bg-white/[0.04] transition-colors text-left group"
                             >
-                                <div className="flex items-center gap-3">
-                                    <img src={coin.image} alt="" className="w-6 h-6 rounded-full" />
-                                    <div>
-                                        <div className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{coin.symbol.toUpperCase()}</div>
-                                        <div className="text-[10px] text-gray-600">{coin.name}</div>
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <div className="text-xs font-bold text-gray-200 group-hover:text-amber-400 transition-colors truncate">
+                                        {coin.symbol.toUpperCase()}
                                     </div>
+                                    <span className="text-[9px] text-gray-600 hidden xl:block truncate">{coin.name}</span>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-xs font-mono font-medium text-white">
-                                        ${coin.current_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: coin.current_price < 1 ? 6 : 2 })}
-                                    </div>
-                                    <div className={`text-[10px] font-mono ${coin.price_change_percentage_24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+
+                                <div className="text-right font-mono text-xs text-white">
+                                    {coin.current_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: coin.current_price < 1 ? 6 : 2 })}
+                                </div>
+
+                                <div className="text-right flex justify-end">
+                                    <div className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${coin.price_change_percentage_24h >= 0
+                                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                            : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                        }`}>
                                         {coin.price_change_percentage_24h >= 0 ? '+' : ''}{coin.price_change_percentage_24h.toFixed(2)}%
                                     </div>
                                 </div>
