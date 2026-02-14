@@ -140,7 +140,7 @@ export default function TerminalPage() {
             {/* Widget Grid */}
             <motion.main
                 layout
-                className="relative z-10 flex-1 p-4 md:p-6 grid grid-cols-1 md:grid-cols-12 auto-rows-[60px] gap-4 md:gap-6 overflow-y-auto custom-scrollbar content-start"
+                className={`relative z-10 flex-1 p-4 md:p-6 ${isMobile ? 'flex flex-col gap-8 pb-24' : 'grid grid-cols-12 auto-rows-[60px] gap-6 pb-6'} overflow-y-auto custom-scrollbar content-start`}
             >
                 <AnimatePresence>
                     {layout.map((widget, index) => (
@@ -151,12 +151,11 @@ export default function TerminalPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className={`relative group rounded-2xl overflow-hidden border bg-[#121218] ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/10'}`}
-                            style={{
-                                gridColumn: isMobile ? 'span 1' : `span ${widget.colSpan}`,
-                                gridRow: isMobile ? 'auto' : `span ${widget.rowSpan}`,
-                                minHeight: isMobile ? '300px' : 'auto'
-                            }}
+                            className={`relative group rounded-2xl overflow-hidden border bg-[#121218] shadow-lg ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'} ${isMobile ? 'w-full min-h-[400px]' : ''}`}
+                            style={!isMobile ? {
+                                gridColumn: `span ${widget.colSpan}`,
+                                gridRow: `span ${widget.rowSpan}`,
+                            } : {}}
                         >
                             {/* Widget Content */}
                             <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>

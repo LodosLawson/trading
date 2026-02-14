@@ -32,7 +32,9 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/icons/icon-192.svg",
-    apple: "/icons/icon-192.svg",
+    apple: [
+      { url: "/icons/icon-192.svg" },
+    ],
   },
 };
 
