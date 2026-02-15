@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthProvider';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import WindowFrame from '@/components/ui/WindowFrame';
 import LiveNewsWidget from '@/components/dashboard/LiveNewsWidget';
 import MarketWidget from '@/components/dashboard/MarketWidget';
 import NewsWidget from '@/components/dashboard/NewsWidget';
