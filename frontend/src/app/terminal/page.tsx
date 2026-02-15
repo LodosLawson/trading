@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthProvider';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import LiveNewsWidget from '@/components/dashboard/LiveNewsWidget';
 import MarketWidget from '@/components/dashboard/MarketWidget';
 import NewsWidget from '@/components/dashboard/NewsWidget';
 import ChartWidget from '@/components/dashboard/ChartWidget';
@@ -13,7 +14,7 @@ import BrowserWidget from '@/components/dashboard/BrowserWidget';
 import TradingPanel from '@/components/dashboard/TradingPanel';
 
 // Types for our Grid System
-type WidgetType = 'MARKET' | 'NEWS' | 'CHART' | 'CHAT' | 'BROWSER' | 'TRADING';
+type WidgetType = 'MARKET' | 'NEWS' | 'CHART' | 'CHAT' | 'BROWSER' | 'TRADING' | 'LIVENEWS';
 
 interface Widget {
     id: string;
@@ -26,14 +27,15 @@ const DEFAULT_LAYOUT: Widget[] = [
     { id: 'chart-1', type: 'CHART', colSpan: 8, rowSpan: 5 },
     { id: 'market-1', type: 'MARKET', colSpan: 4, rowSpan: 8 },
     { id: 'trading-1', type: 'TRADING', colSpan: 8, rowSpan: 3 }, // Trading Panel below chart
-    { id: 'news-1', type: 'NEWS', colSpan: 6, rowSpan: 4 },
-    { id: 'chat-1', type: 'CHAT', colSpan: 6, rowSpan: 4 },
+    { id: 'livenews-1', type: 'LIVENEWS', colSpan: 6, rowSpan: 5 }, // Replaced generic NEWS with LIVENEWS for demo
+    { id: 'chat-1', type: 'CHAT', colSpan: 6, rowSpan: 5 },
     { id: 'browser-1', type: 'BROWSER', colSpan: 12, rowSpan: 6 }, // Browser at bottom
 ];
 
 const AVAILABLE_WIDGETS: { type: WidgetType; label: string; defaultCol: number; defaultRow: number }[] = [
     { type: 'MARKET', label: 'Market Ticker', defaultCol: 3, defaultRow: 6 },
-    { type: 'NEWS', label: 'News Feed', defaultCol: 3, defaultRow: 6 },
+    { type: 'NEWS', label: 'News Feed (Classic)', defaultCol: 3, defaultRow: 6 },
+    { type: 'LIVENEWS', label: 'Live Wire (Pro)', defaultCol: 6, defaultRow: 6 },
     { type: 'CHART', label: 'Chart View', defaultCol: 6, defaultRow: 6 },
     { type: 'CHAT', label: 'AI Agent', defaultCol: 3, defaultRow: 8 },
     { type: 'BROWSER', label: 'Web Browser', defaultCol: 6, defaultRow: 4 },
