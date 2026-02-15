@@ -92,22 +92,30 @@ export default function BrowserWidget({ defaultUrl, mode = 'floating' }: { defau
                     >
                         {/* Browser Toolbar */}
                         <div className="flex items-center gap-2 p-3 border-b border-white/10 bg-[#0a0a0f]">
-                            {/* Controls (Only show close/maximize in floating mode) */}
-                            {mode === 'floating' && (
+                            {/* Controls */}
+                            {mode === 'floating' ? (
                                 <div className="flex items-center gap-1.5 mr-2">
                                     <button className="w-3 h-3 rounded-full bg-red-500/80 hover:bg-red-500 cursor-pointer" onClick={() => setIsOpen(false)} />
                                     <button className="w-3 h-3 rounded-full bg-amber-500/80 hover:bg-amber-500 cursor-pointer" onClick={() => setIsMaximized(!isMaximized)} />
+                                    <button className="w-3 h-3 rounded-full bg-emerald-500/80 hover:bg-emerald-500 cursor-pointer" onClick={() => handleSearch({ preventDefault: () => { } } as any)} title="Refresh" />
                                 </div>
+                            ) : (
+                                <button
+                                    className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors mr-1"
+                                    onClick={() => handleSearch({ preventDefault: () => { } } as any)}
+                                    title="Home / Refresh"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                                    </svg>
+                                </button>
                             )}
-                            <div className="flex items-center mr-2">
-                                <button className="w-3 h-3 rounded-full bg-emerald-500/80 hover:bg-emerald-500 cursor-pointer" onClick={() => handleSearch({ preventDefault: () => { } } as any)} title="Refresh / Home" />
-                            </div>
 
                             {/* Address Bar */}
                             <form onSubmit={handleSearch} className="flex-1 relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50">
-                                    <svg className="w-3 h-3 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none">
+                                    <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                                     </svg>
                                 </div>
                                 <input
@@ -115,16 +123,16 @@ export default function BrowserWidget({ defaultUrl, mode = 'floating' }: { defau
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search (Bing) or URL..."
-                                    className="w-full bg-[#050508] text-white text-xs sm:text-sm rounded-lg py-1.5 pl-8 pr-8 border border-white/10 focus:outline-none focus:border-blue-500/50 transition-colors font-mono"
+                                    className="w-full bg-[#050508] text-white text-base sm:text-sm rounded-lg py-2 pl-9 pr-9 border border-white/10 focus:outline-none focus:border-blue-500/50 transition-colors font-mono"
                                 />
                                 {url && (
                                     <button
                                         type="button"
                                         onClick={() => window.open(url, '_blank')}
                                         title="Open External"
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-white"
                                     >
-                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                                         </svg>
                                     </button>

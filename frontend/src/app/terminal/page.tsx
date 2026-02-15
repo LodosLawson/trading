@@ -151,7 +151,7 @@ export default function TerminalPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className={`relative group rounded-2xl overflow-hidden border bg-[#121218] shadow-lg ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'} ${isMobile ? 'w-full min-h-[400px]' : ''}`}
+                            className={`relative group rounded-2xl overflow-hidden border bg-[#121218] shadow-lg ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'} ${isMobile ? (widget.type === 'BROWSER' || widget.type === 'CHART' ? 'w-full min-h-[500px]' : 'w-full min-h-[350px]') : ''}`}
                             style={!isMobile ? {
                                 gridColumn: `span ${widget.colSpan}`,
                                 gridRow: `span ${widget.rowSpan}`,
