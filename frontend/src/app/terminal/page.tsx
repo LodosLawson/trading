@@ -102,7 +102,7 @@ export default function TerminalPage() {
             case 'NEWS': return <NewsWidget limit={8} />;
             case 'CHART': return <ChartWidget symbol="BINANCE:BTCUSDT" />;
             case 'CHAT': return <DashboardChatWidget />;
-            case 'BROWSER': return <BrowserWidget />;
+            case 'BROWSER': return <BrowserWidget mode="embedded" />;
             default: return null;
         }
     };

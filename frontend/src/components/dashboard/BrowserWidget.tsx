@@ -3,9 +3,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function BrowserWidget({ defaultUrl }: { defaultUrl?: string }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [isMaximized, setIsMaximized] = useState(false);
+export default function BrowserWidget({ defaultUrl, mode = 'floating' }: { defaultUrl?: string, mode?: 'floating' | 'embedded' }) {
+    const [isOpen, setIsOpen] = useState(mode === 'embedded');
+    const [isMaximized, setIsMaximized] = useState(mode === 'embedded');
     const [url, setUrl] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -17,9 +17,14 @@ export default function BrowserWidget({ defaultUrl }: { defaultUrl?: string }) {
         if (defaultUrl) {
             setUrl(defaultUrl);
             setSearchQuery(defaultUrl);
+        }
+        if (mode === 'embedded') {
+            setIsOpen(true);
+            setIsMaximized(true);
+        } else if (defaultUrl && mode === 'floating') {
             setIsOpen(true);
         }
-    }, [defaultUrl]);
+    }, [defaultUrl, mode]);
 
     // Handle Search / Navigation
     const handleSearch = (e: React.FormEvent) => {
@@ -42,14 +47,15 @@ export default function BrowserWidget({ defaultUrl }: { defaultUrl?: string }) {
     };
 
     const toggleWidget = () => {
+        if (mode === 'embedded') return;
         setIsOpen(!isOpen);
         if (!isOpen) setIsMaximized(false);
     };
 
     return (
         <>
-            {/* Floating Trigger Button */}
-            {!isMaximized && (
+            {/* Floating Trigger Button (Only in floating mode) */}
+            {mode === 'floating' && !isMaximized && (
                 <motion.button
                     onClick={toggleWidget}
                     whileHover={{ scale: 1.05 }}
@@ -68,26 +74,33 @@ export default function BrowserWidget({ defaultUrl }: { defaultUrl?: string }) {
                 </motion.button>
             )}
 
-            {/* Pop-up Widget / Browser Mode */}
+            {/* Widget Container */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={isMaximized ? { opacity: 0, scale: 0.9 } : { opacity: 0, y: 20, scale: 0.95 }}
-                        animate={isMaximized
-                            ? { opacity: 1, y: 0, scale: 1, top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', borderRadius: 0 }
-                            : { opacity: 1, y: 0, scale: 1, top: 'auto', left: 'auto', right: '1.5rem', bottom: '5rem', width: '360px', height: '600px', borderRadius: '1rem' }
+                        initial={mode === 'floating' ? (isMaximized ? { opacity: 0, scale: 0.9 } : { opacity: 0, y: 20, scale: 0.95 }) : { opacity: 1 }}
+                        animate={mode === 'floating'
+                            ? (isMaximized
+                                ? { opacity: 1, y: 0, scale: 1, top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', borderRadius: 0 }
+                                : { opacity: 1, y: 0, scale: 1, top: 'auto', left: 'auto', right: '1.5rem', bottom: '5rem', width: '360px', height: '600px', borderRadius: '1rem' }
+                            )
+                            : { opacity: 1, width: '100%', height: '100%' }
                         }
-                        exit={{ opacity: 0, scale: 0.9 }}
+                        exit={mode === 'floating' ? { opacity: 0, scale: 0.9 } : {}}
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        className={`fixed z-40 bg-[#1a1a20] border border-white/10 overflow-hidden flex flex-col shadow-2xl ${isMaximized ? '' : 'max-h-[80vh]'}`}
+                        className={`${mode === 'floating' ? 'fixed z-40 bg-[#1a1a20] border border-white/10 shadow-2xl' : 'w-full h-full bg-[#121218] flex flex-col'} overflow-hidden flex flex-col ${mode === 'floating' && !isMaximized ? 'max-h-[80vh]' : ''}`}
                     >
                         {/* Browser Toolbar */}
                         <div className="flex items-center gap-2 p-3 border-b border-white/10 bg-[#0a0a0f]">
-                            {/* Controls */}
-                            <div className="flex items-center gap-1.5 mr-2">
-                                <button className="w-3 h-3 rounded-full bg-red-500/80 hover:bg-red-500 cursor-pointer" onClick={() => setIsOpen(false)} />
-                                <button className="w-3 h-3 rounded-full bg-amber-500/80 hover:bg-amber-500 cursor-pointer" onClick={() => setIsMaximized(!isMaximized)} />
-                                <button className="w-3 h-3 rounded-full bg-emerald-500/80 hover:bg-emerald-500 cursor-pointer" onClick={() => handleSearch({ preventDefault: () => { } } as any)} />
+                            {/* Controls (Only show close/maximize in floating mode) */}
+                            {mode === 'floating' && (
+                                <div className="flex items-center gap-1.5 mr-2">
+                                    <button className="w-3 h-3 rounded-full bg-red-500/80 hover:bg-red-500 cursor-pointer" onClick={() => setIsOpen(false)} />
+                                    <button className="w-3 h-3 rounded-full bg-amber-500/80 hover:bg-amber-500 cursor-pointer" onClick={() => setIsMaximized(!isMaximized)} />
+                                </div>
+                            )}
+                            <div className="flex items-center mr-2">
+                                <button className="w-3 h-3 rounded-full bg-emerald-500/80 hover:bg-emerald-500 cursor-pointer" onClick={() => handleSearch({ preventDefault: () => { } } as any)} title="Refresh / Home" />
                             </div>
 
                             {/* Address Bar */}
