@@ -109,16 +109,46 @@ export default function TerminalPage() {
     // --- RENDERERS ---
 
     const renderWidgetContent = (type: WidgetType) => {
+        let content = null;
+        let title = '';
+
         switch (type) {
-            case 'MARKET': return <MarketWidget limit={10} onSelectSymbol={setActiveSymbol} />;
-            case 'NEWS': return <NewsWidget limit={8} />;
-            case 'LIVENEWS': return <LiveNewsWidget />;
-            case 'CHART': return <ChartWidget symbol={activeSymbol} />;
-            case 'CHAT': return <DashboardChatWidget />;
-            case 'BROWSER': return <BrowserWidget mode="embedded" />;
-            case 'TRADING': return <TradingPanel symbol={activeSymbol} />;
+            case 'MARKET':
+                content = <MarketWidget limit={10} onSelectSymbol={setActiveSymbol} />;
+                title = 'MARKET TICKER';
+                break;
+            case 'NEWS':
+                content = <NewsWidget limit={8} />;
+                title = 'INTELLIGENCE FEED';
+                break;
+            case 'LIVENEWS':
+                content = <LiveNewsWidget />;
+                title = 'LIVE WIRE // GLOBAL';
+                break;
+            case 'CHART':
+                content = <ChartWidget symbol={activeSymbol} />;
+                title = `CHART // ${activeSymbol.split(':')[1] || activeSymbol}`;
+                break;
+            case 'CHAT':
+                content = <DashboardChatWidget />;
+                title = 'AI ANALYST';
+                break;
+            case 'BROWSER':
+                content = <BrowserWidget mode="embedded" />;
+                title = 'QUANTUM BROWSER';
+                break;
+            case 'TRADING':
+                content = <TradingPanel symbol={activeSymbol} />;
+                title = 'EXECUTION DECK';
+                break;
             default: return null;
         }
+
+        return (
+            <WindowFrame title={title} className="h-full">
+                {content}
+            </WindowFrame>
+        );
     };
 
     return (
