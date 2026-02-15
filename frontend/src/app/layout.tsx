@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
+import AppShell from "@/components/layout/AppShell";
+import { AuthProvider } from "@/context/AuthProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,7 +25,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "MarketPulse — AI Financial Intelligence",
-  description: "AI-Native Crypto & Financial Intelligence Platform",
+  description: "AI-Native Financial Intelligence Platform — Powered by LockTrace",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -37,10 +39,6 @@ export const metadata: Metadata = {
     ],
   },
 };
-
-import AppShell from "@/components/layout/AppShell";
-
-import { AuthProvider } from "@/context/AuthProvider";
 
 export default function RootLayout({
   children,
@@ -56,7 +54,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050508] text-white selection:bg-blue-500/30`}
       >
-        />
+        <AuthProvider>
+          <AppShell>
+            {children}
+          </AppShell>
+          <Script
+            src="/sw.js"
+            strategy="afterInteractive"
+          />
+        </AuthProvider>
       </body>
     </html>
   );
