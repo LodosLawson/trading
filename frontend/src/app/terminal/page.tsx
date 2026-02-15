@@ -108,9 +108,11 @@ export default function TerminalPage() {
         switch (type) {
             case 'MARKET': return <MarketWidget limit={10} />;
             case 'NEWS': return <NewsWidget limit={8} />;
+            case 'LIVENEWS': return <LiveNewsWidget />;
             case 'CHART': return <ChartWidget symbol="BINANCE:BTCUSDT" />;
             case 'CHAT': return <DashboardChatWidget />;
             case 'BROWSER': return <BrowserWidget mode="embedded" />;
+            case 'TRADING': return <TradingPanel symbol="BINANCE:BTCUSDT" />;
             default: return null;
         }
     };
