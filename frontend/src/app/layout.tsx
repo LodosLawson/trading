@@ -40,6 +40,8 @@ export const metadata: Metadata = {
 
 import AppShell from "@/components/layout/AppShell";
 
+import { AuthProvider } from "@/context/AuthProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -47,22 +49,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050508] text-white selection:bg-blue-500/30`}
       >
-        <AppShell>
-          {children}
-        </AppShell>
-        <Script
-          id="sw-register"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
-              }
-            `,
-          }}
         />
       </body>
     </html>

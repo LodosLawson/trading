@@ -2,29 +2,33 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
+import { useAuth } from '@/context/AuthProvider';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import MarketWidget from '@/components/dashboard/MarketWidget';
 import NewsWidget from '@/components/dashboard/NewsWidget';
 import ChartWidget from '@/components/dashboard/ChartWidget';
 import DashboardChatWidget from '@/components/dashboard/DashboardChatWidget';
 import BrowserWidget from '@/components/dashboard/BrowserWidget';
+import TradingPanel from '@/components/dashboard/TradingPanel';
 
 // Types for our Grid System
-type WidgetType = 'MARKET' | 'NEWS' | 'CHART' | 'CHAT' | 'BROWSER';
+type WidgetType = 'MARKET' | 'NEWS' | 'CHART' | 'CHAT' | 'BROWSER' | 'TRADING';
 
-interface WidgetItem {
+interface Widget {
     id: string;
     type: WidgetType;
     colSpan: number; // 1 to 12
     rowSpan: number; // 1 to 12
 }
 
-const INITIAL_LAYOUT: WidgetItem[] = [
-    { id: 'market-1', type: 'MARKET', colSpan: 3, rowSpan: 6 },
-    { id: 'news-1', type: 'NEWS', colSpan: 3, rowSpan: 6 },
-    { id: 'chart-1', type: 'CHART', colSpan: 6, rowSpan: 8 },
-    { id: 'browser-1', type: 'BROWSER', colSpan: 6, rowSpan: 4 },
-    { id: 'chat-1', type: 'CHAT', colSpan: 3, rowSpan: 12 },
+const DEFAULT_LAYOUT: Widget[] = [
+    { id: 'chart-1', type: 'CHART', colSpan: 8, rowSpan: 5 },
+    { id: 'market-1', type: 'MARKET', colSpan: 4, rowSpan: 8 },
+    { id: 'trading-1', type: 'TRADING', colSpan: 8, rowSpan: 3 }, // Trading Panel below chart
+    { id: 'news-1', type: 'NEWS', colSpan: 6, rowSpan: 4 },
+    { id: 'chat-1', type: 'CHAT', colSpan: 6, rowSpan: 4 },
+    { id: 'browser-1', type: 'BROWSER', colSpan: 12, rowSpan: 6 }, // Browser at bottom
 ];
 
 const AVAILABLE_WIDGETS: { type: WidgetType; label: string; defaultCol: number; defaultRow: number }[] = [
@@ -33,14 +37,16 @@ const AVAILABLE_WIDGETS: { type: WidgetType; label: string; defaultCol: number; 
     { type: 'CHART', label: 'Chart View', defaultCol: 6, defaultRow: 6 },
     { type: 'CHAT', label: 'AI Agent', defaultCol: 3, defaultRow: 8 },
     { type: 'BROWSER', label: 'Web Browser', defaultCol: 6, defaultRow: 4 },
+    { type: 'TRADING', label: 'Trading Panel', defaultCol: 6, defaultRow: 4 },
 ];
 
 export default function TerminalPage() {
-    const [layout, setLayout] = useState<WidgetItem[]>(INITIAL_LAYOUT);
+    const { user } = useAuth();
+    const [layout, setLayout] = useState<Widget[]>(DEFAULT_LAYOUT);
     const [isEditing, setIsEditing] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
-    // Initial load from local storage could go here
+    // Initialize & Load Layout
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
@@ -58,7 +64,7 @@ export default function TerminalPage() {
         const template = AVAILABLE_WIDGETS.find(w => w.type === type);
         if (!template) return;
 
-        const newWidget: WidgetItem = {
+        const newWidget: Widget = {
             id: `${type.toLowerCase()}-${Date.now()}`,
             type: type,
             colSpan: template.defaultCol,
