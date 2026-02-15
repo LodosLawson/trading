@@ -2,23 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ChartWidget from './ChartWidget'; // Reuse existing ChartWidget
+import ChartWidget from './ChartWidget'; // Ensure this is imported
 
-interface NewsItem {
-    title: string;
-    source: string;
-    published_at: string;
-    url: string;
-    impact_score?: number;
-    reasoning?: string;
-    affected_assets?: string[];
-    summary?: string;
-}
-
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 // Simplistic Line Chart component (Pure SVG)
 const SimpleTrendChart = ({ data, color = '#10b981' }: { data: number[], color?: string }) => {
@@ -191,8 +176,8 @@ export default function LiveNewsWidget() {
                                         <div className="shrink-0 flex flex-col items-end gap-1">
                                             {item.impact_score && (
                                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border ${item.impact_score > 6 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
-                                                        item.impact_score < -6 ? 'bg-red-500/10 text-red-400 border-red-500/30' :
-                                                            'bg-gray-500/10 text-gray-400 border-gray-500/30'
+                                                    item.impact_score < -6 ? 'bg-red-500/10 text-red-400 border-red-500/30' :
+                                                        'bg-gray-500/10 text-gray-400 border-gray-500/30'
                                                     }`}>
                                                     {item.impact_score}
                                                 </div>
