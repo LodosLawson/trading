@@ -96,7 +96,7 @@ export default function TerminalPage() {
 
     const resetLayout = () => {
         if (confirm('Reset layout to default?')) {
-            setLayout(INITIAL_LAYOUT);
+            setLayout(DEFAULT_LAYOUT);
         }
     };
 
