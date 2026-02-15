@@ -13,9 +13,17 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
+const app = !getApps().length && firebaseConfig.apiKey ? initializeApp(firebaseConfig) : (getApps()[0] || null);
+
+let auth: any = null;
+let db: any = null;
+
+if (app) {
+    auth = getAuth(app);
+    db = getFirestore(app);
+} else {
+    console.warn("Firebase config missing. Skipping initialization. (This is expected during build if env vars are missing)");
+}
 
 // Messaging is only supported in the browser
 let messaging: any = null;

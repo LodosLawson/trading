@@ -38,6 +38,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!auth) {
+            setLoading(false);
+            return;
+        }
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user);
             setLoading(false);
@@ -47,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const signInWithGoogle = async () => {
+        if (!auth) return;
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(auth, provider);
@@ -57,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const signUpWithEmail = async (email: string, pass: string, nickname: string) => {
+        if (!auth) return;
         try {
             const result = await createUserWithEmailAndPassword(auth, email, pass);
             if (result.user) {
@@ -71,6 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const signInWithEmail = async (email: string, pass: string) => {
+        if (!auth) return;
         try {
             await signInWithEmailAndPassword(auth, email, pass);
         } catch (error) {
@@ -80,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const signOut = async () => {
+        if (!auth) return;
         try {
             await firebaseSignOut(auth);
         } catch (error) {
