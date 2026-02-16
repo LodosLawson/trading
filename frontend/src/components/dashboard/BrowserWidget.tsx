@@ -273,10 +273,6 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                     </div>
                 )}
             </div>
-        </motion.div>
-    )
-}
-            </AnimatePresence >
-        </>
+        </div>
     );
 }
