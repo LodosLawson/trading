@@ -10,34 +10,81 @@ interface PulseChartProps {
 export default function PulseChart({ symbol }: PulseChartProps) {
     const [dataPoints, setDataPoints] = useState<number[]>([]);
     const [mounted, setMounted] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    // Helper to map trading symbols to CoinGecko IDs
+    const mapSymbolToID = (sym: string) => {
+        const s = sym.split(':')[1]?.replace('USDT', '').toLowerCase() || sym.toLowerCase();
+        const map: Record<string, string> = {
+            'btc': 'bitcoin',
+            'eth': 'ethereum',
+            'sol': 'solana',
+            'xrp': 'ripple',
+            'doge': 'dogecoin',
+            'ada': 'cardano',
+            'dot': 'polkadot',
+            'matic': 'matic-network'
+        };
+        return map[s] || s; // fallback to symbol name (might work for some)
+    };
 
     useEffect(() => {
         setMounted(true);
-        // Generate initial data
-        const initial = Array.from({ length: 40 }, () => 30 + Math.random() * 40);
-        setDataPoints(initial);
 
-        const interval = setInterval(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const coinId = mapSymbolToID(symbol);
+                const res = await fetch(`/api/history/${coinId}?days=1`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        // Downsample if too many points (keep ~50 for smoothness)
+                        const downsampled = data.filter((_, i) => i % Math.ceil(data.length / 50) === 0);
+                        setDataPoints(downsampled);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch pulse data", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+        // Poll every minute for real updates
+        const poll = setInterval(fetchData, 60000);
+
+        // Animation loop for "breathing" effect on the *last* point only
+        const animInterval = setInterval(() => {
             setDataPoints(prev => {
-                const nextVal = prev[prev.length - 1] + (Math.random() - 0.5) * 10;
-                // Clamp between 10 and 90
-                const clamped = Math.max(10, Math.min(90, nextVal));
-                return [...prev.slice(1), clamped];
+                if (prev.length === 0) return prev;
+                const last = prev[prev.length - 1];
+                // Micro-movements on the last point to keep it alive
+                const noise = (Math.random() - 0.5) * (last * 0.002);
+                return [...prev.slice(0, -1), last + noise];
             });
-        }, 100); // Faster updates for "Pulse" feel
+        }, 100);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(poll);
+            clearInterval(animInterval);
+        };
     }, [symbol]);
 
     // Construct SVG Path
     const pathD = useMemo(() => {
         if (dataPoints.length === 0) return '';
-        // Map points to SVG coordinates (100x100 viewbox)
-        // X goes from 0 to 100
-        // Y goes from 100 (bottom) to 0 (top). value 0 = y100, value 100 = y0
+
+        const max = Math.max(...dataPoints);
+        const min = Math.min(...dataPoints);
+        const range = max - min || 1;
+
         return dataPoints.map((p, i) => {
             const x = (i / (dataPoints.length - 1)) * 100;
-            const y = 100 - p;
+            // Normalize to 0-100
+            const normalized = ((p - min) / range) * 80 + 10; // keep 10% padding top/bottom
+            const y = 100 - normalized;
             return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
         }).join(' ');
     }, [dataPoints]);

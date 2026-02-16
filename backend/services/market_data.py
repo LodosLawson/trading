@@ -88,16 +88,41 @@ def get_market_summary() -> Dict[str, Any]:
     return summary
 
 
-def fetch_crypto_prices(vs_currency: str = "usd", per_page: int = 100) -> List[Dict[str, Any]]:
+def get_coin_history(coin_id: str, days: str = "1") -> List[float]:
+    """
+    Fetches historical price data (sparkline) for a specific coin.
+    """
+    try:
+        url = f"{COINGECKO_API_URL}/coins/{coin_id}/market_chart"
+        params = {
+            "vs_currency": "usd",
+            "days": days,
+            "interval": "hourly" if days == "1" else "daily"
+        }
+        response = requests.get(url, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            # extract prices (timestamp, price) -> just price
+            prices = [p[1] for p in data.get("prices", [])]
+            return prices
+        
+        logger.error(f"CoinGecko API Error: {response.status_code}")
+        return []
+    except Exception as e:
+        logger.error(f"Error fetching history for {coin_id}: {e}")
+        return []
+
+def get_crypto_prices(limit: int = 10) -> List[Dict[str, Any]]:
     """
     Fetches live crypto prices from CoinGecko (free, no API key required).
     Returns top coins sorted by market cap.
     """
-    url = "https://api.coingecko.com/api/v3/coins/markets"
+    url = f"{COINGECKO_API_URL}/coins/markets"
     params = {
-        "vs_currency": vs_currency,
+        "vs_currency": "usd",
         "order": "market_cap_desc",
-        "per_page": per_page,
+        "per_page": limit,
         "page": 1,
         "sparkline": True,
         "price_change_percentage": "1h,24h,7d"
