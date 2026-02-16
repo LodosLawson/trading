@@ -25,12 +25,9 @@ const INITIAL_TAB: Tab = {
     historyIndex: 0
 };
 
-historyIndex: 0
-};
-
 const FAVORITES = [
-    { name: 'Google', url: 'https://www.google.com/search?igu=1' },
     { name: 'Bing', url: 'https://www.bing.com' },
+    { name: 'Google', url: 'https://www.google.com/webhp?igu=1' },
     { name: 'Wikipedia', url: 'https://www.wikipedia.org' },
     { name: 'TradingView', url: 'https://www.tradingview.com' },
     { name: 'CoinGecko', url: 'https://www.coingecko.com' }
@@ -89,8 +86,8 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
             if (url.includes('.') && !url.includes(' ')) {
                 finalUrl = `https://${url}`;
             } else {
-                // Use Google with igu=1 which often allows embedding
-                finalUrl = `https://www.google.com/search?igu=1&q=${encodeURIComponent(url)}`;
+                // Use Bing as it allows embedding more often than Google
+                finalUrl = `https://www.bing.com/search?q=${encodeURIComponent(url)}`;
             }
         }
 
@@ -198,7 +195,7 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                         value={inputUrl}
                         onChange={(e) => setInputUrl(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Search (DuckDuckGo) or URL..."
+                        placeholder="Search (Bing) or URL..."
                         className="w-full bg-[#050508] text-white text-base sm:text-sm rounded-lg py-2 pl-9 pr-9 border border-white/10 focus:outline-none focus:border-blue-500/50 transition-colors font-mono"
                     />
                     {activeTab.url && activeTab.url !== 'about:blank' && (
@@ -244,8 +241,8 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
 
                         <div className="grid grid-cols-4 gap-6 px-8">
                             {[
-                                { name: 'Google', url: 'https://www.google.com/search?igu=1' },
-                                { name: 'Bing', url: 'https://www.bing.com' },
+                                { name: 'Bing', url: 'https://www.bing.com/search?q=crypto' },
+                                { name: 'Google', url: 'https://www.google.com/webhp?igu=1' },
                                 { name: 'Wikipedia', url: 'https://www.wikipedia.org' },
                                 { name: 'Docs', url: 'https://devdocs.io' }
                             ].map(site => (
