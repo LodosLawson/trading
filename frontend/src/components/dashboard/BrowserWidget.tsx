@@ -184,7 +184,7 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                 </div>
 
                 {/* Address Bar */}
-                <form onSubmit={handleSearch} className="flex-1 relative group">
+                <div className="flex-1 relative group">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none">
                         <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -192,15 +192,16 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                     </div>
                     <input
                         type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        value={inputUrl}
+                        onChange={(e) => setInputUrl(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         placeholder="Search (Bing) or URL..."
                         className="w-full bg-[#050508] text-white text-base sm:text-sm rounded-lg py-2 pl-9 pr-9 border border-white/10 focus:outline-none focus:border-blue-500/50 transition-colors font-mono"
                     />
-                    {url && (
+                    {activeTab.url && activeTab.url !== 'about:blank' && (
                         <button
                             type="button"
-                            onClick={() => window.open(url, '_blank')}
+                            onClick={() => window.open(activeTab.url, '_blank')}
                             title="Open External"
                             className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-white"
                         >
@@ -209,7 +210,7 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                             </svg>
                         </button>
                     )}
-                </form>
+                </div>
             </div>
 
             {/* Browser Content (Iframe) */}
@@ -220,10 +221,10 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                     </div>
                 )}
 
-                {url ? (
+                {activeTab.url && activeTab.url !== 'about:blank' ? (
                     <iframe
                         ref={iframeRef}
-                        src={url}
+                        src={activeTab.url}
                         title="Browser View"
                         className="w-full h-full border-none"
                         sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
@@ -247,7 +248,7 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                             ].map(site => (
                                 <button
                                     key={site.name}
-                                    onClick={() => { setUrl(site.url); setSearchQuery(site.url); }}
+                                    onClick={() => navigate(site.url)}
                                     className="flex flex-col items-center gap-3 group"
                                 >
                                     <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center group-hover:bg-white/10 group-hover:border-blue-500/30 transition-all shadow-lg group-hover:shadow-blue-500/10">
@@ -265,7 +266,7 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                 )}
 
                 {/* Overlay for blocked sites hint */}
-                {url && (
+                {activeTab.url && activeTab.url !== 'about:blank' && (
                     <div className="absolute bottom-4 right-4 pointer-events-none">
                         <div className="px-3 py-2 bg-black/80 backdrop-blur text-[10px] text-gray-400 rounded-lg border border-white/10 max-w-[200px] text-center">
                             If site fails to load, click the <span className="text-white">External Link</span> icon in the bar.
