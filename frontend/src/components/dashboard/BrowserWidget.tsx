@@ -79,24 +79,57 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
 
     // --- Navigation Logic ---
 
-    const navigate = (url: string) => {
-        let finalUrl = url;
-        if (!url.startsWith('http') && !url.startsWith('about:')) {
-            // Simple search or domain guess
-            if (url.includes('.') && !url.includes(' ')) {
-                finalUrl = `https://${url}`;
+    // --- Navigation Logic ---
+
+    const transformUrl = (url: string): string => {
+        let target = url;
+
+        // Handle search queries vs URLs
+        if (!target.startsWith('http') && !target.startsWith('about:')) {
+            if (target.includes('.') && !target.includes(' ')) {
+                target = `https://${target}`;
             } else {
-                // Use Bing as it allows embedding more often than Google
-                finalUrl = `https://www.bing.com/search?q=${encodeURIComponent(url)}`;
+                return `https://www.bing.com/search?q=${encodeURIComponent(target)}`;
             }
         }
+
+        const domain = target.replace('https://', '').replace('http://', '').split('/')[0].toLowerCase();
+
+        // 1. YouTube -> Embed
+        if (domain.includes('youtube.com') || domain.includes('youtu.be')) {
+            if (target.includes('/watch?v=')) {
+                const videoId = target.split('v=')[1]?.split('&')[0];
+                if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+            }
+        }
+
+        // 2. Google -> IGU Mode (Iframe Google User)
+        if (domain.includes('google.com') && !target.includes('igu=1')) {
+            if (target.includes('/search')) return `${target}&igu=1`;
+            return 'https://www.google.com/webhp?igu=1';
+        }
+
+        // 3. Bing -> Allowed
+        if (domain.includes('bing.com')) return target;
+
+        // 4. Wikipedia -> Allowed
+        if (domain.includes('wikipedia.org')) return target;
+
+        // 5. Crypto sites (CoinGecko, TradingView) -> Allowed
+        if (domain.includes('coingecko.com') || domain.includes('tradingview.com')) return target;
+
+        return target;
+    };
+
+    const navigate = (url: string) => {
+        const finalUrl = transformUrl(url);
 
         setIsLoading(true);
         updateTab(activeTabId, {
             url: finalUrl,
             history: [...activeTab.history.slice(0, activeTab.historyIndex + 1), finalUrl],
             historyIndex: activeTab.historyIndex + 1,
-            title: finalUrl.replace('https://', '').split('/')[0] // Rough title guess
+            title: finalUrl.replace('https://', '').replace('http://', '').split('/')[0]
         });
 
         // Mock loading finish
