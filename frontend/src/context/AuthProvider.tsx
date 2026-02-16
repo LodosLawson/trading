@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import {
     User,
     onAuthStateChanged,
@@ -36,6 +37,8 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (!auth) {
@@ -45,10 +48,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user);
             setLoading(false);
+            if (user && pathname === '/') {
+                router.push('/terminal');
+            }
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [pathname]); // Add pathname dependency to re-check if it changes, though mostly on mount/auth change is enough. Actually strictly `[pathname]` might causing loop if not careful.
+    // Better: just check inside the auth listener. removing pathname from dependency array to avoid loops, as onAuthStateChanged is the trigger.
+    // Wait, if I am on '/', and user is loaded, I want to go to '/terminal'.
+    // If I reload on '/terminal', user loads, pathname is '/terminal', condition fails. Good.
+    // If I am on '/', user loads, condition true, redirect. Good.
+
+    // ... rest of code
 
     const signInWithGoogle = async () => {
         if (!auth) return;

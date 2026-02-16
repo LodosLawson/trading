@@ -227,58 +227,22 @@ export default function TerminalPage() {
                                         className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
                                     >
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                    </button>
-
-                                    {/* Label */}
-                                    <span className="text-sm font-bold tracking-widest uppercase text-white mb-4 bg-black/50 px-3 py-1 rounded">
-                                        {widget.type}
-                                    </span>
-
-                                    {/* Resize Controls */}
-                                    <div className="flex items-center gap-4 bg-black/60 px-4 py-2 rounded-full border border-white/10">
-                                        <div className="flex flex-col items-center gap-1">
-                                            <span className="text-[9px] text-gray-400 uppercase">Width</span>
-                                            <div className="flex gap-1">
-                                                <button onClick={() => resizeWidget(widget.id, -1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
-                                                <span className="font-mono text-xs w-4 text-center">{widget.colSpan}</span>
-                                                <button onClick={() => resizeWidget(widget.id, 1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
+                                        <div className="col-span-12 md:col-span-3 row-span-4 min-h-[200px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-600/5 transition-all group">
+                                            <span className="text-xs text-gray-500 group-hover:text-blue-400 font-bold uppercase tracking-widest">Add Widget</span>
+                                            <div className="flex flex-wrap justify-center gap-2 px-4">
+                                                {AVAILABLE_WIDGETS.map(w => (
+                                                    <button
+                                                        key={w.type}
+                                                        onClick={() => addWidget(w.type)}
+                                                        className="px-3 py-1.5 bg-white/5 hover:bg-blue-600 hover:text-white text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded border border-white/5 transition-colors"
+                                                    >
+                                                        + {w.label}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
-                                        <div className="w-px h-6 bg-white/10"></div>
-                                        <div className="flex flex-col items-center gap-1">
-                                            <span className="text-[9px] text-gray-400 uppercase">Height</span>
-                                            <div className="flex gap-1">
-                                                <button onClick={() => resizeWidget(widget.id, 0, -1)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
-                                                <span className="font-mono text-xs w-4 text-center">{widget.rowSpan}</span>
-                                                <button onClick={() => resizeWidget(widget.id, 0, 1)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            )}
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-
-                {/* Add New Widget Placeholder */}
-                {isEditing && (
-                    <div className="col-span-12 md:col-span-3 row-span-4 min-h-[200px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-600/5 transition-all group">
-                        <span className="text-xs text-gray-500 group-hover:text-blue-400 font-bold uppercase tracking-widest">Add Widget</span>
-                        <div className="flex flex-wrap justify-center gap-2 px-4">
-                            {AVAILABLE_WIDGETS.map(w => (
-                                <button
-                                    key={w.type}
-                                    onClick={() => addWidget(w.type)}
-                                    className="px-3 py-1.5 bg-white/5 hover:bg-blue-600 hover:text-white text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded border border-white/5 transition-colors"
-                                >
-                                    + {w.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
                 )}
-            </motion.main>
-        </div>
-    );
+                                    </motion.main>
+                                </div>
+                            );
 }
