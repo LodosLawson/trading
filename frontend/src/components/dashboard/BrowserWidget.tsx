@@ -153,13 +153,35 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                         key={tab.id}
                         onClick={() => setActiveTabId(tab.id)}
                         className={`group relative flex items-center min-w-[120px] max-w-[200px] h-full px-3 pr-2 rounded-t-lg text-xs font-medium cursor-pointer transition-colors border-t border-x border-transparent select-none ${activeTabId === tab.id ? 'bg-[#1e1e24] text-white border-white/5' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
-                        title="Home / Refresh"
                     >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                        </svg>
+                        <div className={`w-2 h-2 rounded-full mr-2 ${activeTabId === tab.id ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'bg-gray-600'}`} />
+                        <span className="truncate flex-1">{tab.title}</span>
+                        <button
+                            onClick={(e) => closeTab(e, tab.id)}
+                            className="ml-2 p-0.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 text-gray-400 hover:text-red-400 transition-all"
+                        >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                ))}
+                <button onClick={addTab} className="p-1 hover:bg-white/10 rounded-full text-gray-500 transition-colors ml-1">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                </button>
+            </div>
+
+            {/* Navigation Bar */}
+            <div className="flex items-center gap-2 p-2 bg-[#1e1e24] border-b border-white/5 shrink-0">
+                <div className="flex gap-1 text-gray-400">
+                    <button onClick={goBack} disabled={activeTab.historyIndex <= 0} className="p-1.5 hover:bg-white/10 rounded disabled:opacity-30 transition-colors">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                     </button>
-                )}
+                    <button onClick={goForward} disabled={activeTab.historyIndex >= activeTab.history.length - 1} className="p-1.5 hover:bg-white/10 rounded disabled:opacity-30 transition-colors">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                    <button onClick={reload} className={`p-1.5 hover:bg-white/10 rounded transition-colors ${isLoading ? 'animate-spin text-blue-400' : ''}`}>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                </div>
 
                 {/* Address Bar */}
                 <form onSubmit={handleSearch} className="flex-1 relative group">
