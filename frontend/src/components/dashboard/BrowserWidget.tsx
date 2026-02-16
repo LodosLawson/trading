@@ -26,7 +26,7 @@ const INITIAL_TAB: Tab = {
 };
 
 const FAVORITES = [
-    { name: 'Google', url: 'https://www.google.com/search?igu=1' },
+    { name: 'DuckDuckGo', url: 'https://duckduckgo.com' },
     { name: 'Bing', url: 'https://www.bing.com' },
     { name: 'TradingView', url: 'https://www.tradingview.com' },
     { name: 'CoinGecko', url: 'https://www.coingecko.com' },
@@ -87,7 +87,8 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
             if (url.includes('.') && !url.includes(' ')) {
                 finalUrl = `https://${url}`;
             } else {
-                finalUrl = `https://www.bing.com/search?q=${encodeURIComponent(url)}`;
+                // Use DuckDuckGo for better privacy/embedding support
+                finalUrl = `https://duckduckgo.com/?q=${encodeURIComponent(url)}&kae=d`; // kae=d forces dark theme if possible?
             }
         }
 
@@ -195,7 +196,7 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                         value={inputUrl}
                         onChange={(e) => setInputUrl(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Search (Bing) or URL..."
+                        placeholder="Search (DuckDuckGo) or URL..."
                         className="w-full bg-[#050508] text-white text-base sm:text-sm rounded-lg py-2 pl-9 pr-9 border border-white/10 focus:outline-none focus:border-blue-500/50 transition-colors font-mono"
                     />
                     {activeTab.url && activeTab.url !== 'about:blank' && (
@@ -227,7 +228,7 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                         src={activeTab.url}
                         title="Browser View"
                         className="w-full h-full border-none"
-                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox"
+                        sandbox="allow-same-origin allow-scripts allow-forms"
                         referrerPolicy="no-referrer"
                         onError={() => setIsLoading(false)}
                         onLoad={() => setIsLoading(false)}
@@ -241,8 +242,8 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
 
                         <div className="grid grid-cols-4 gap-6 px-8">
                             {[
-                                { name: 'Bing', url: 'https://www.bing.com/search?q=crypto' },
-                                { name: 'Wifi', url: 'https://fast.com' },
+                                { name: 'DuckDuckGo', url: 'https://duckduckgo.com' },
+                                { name: 'Bing', url: 'https://www.bing.com' },
                                 { name: 'Wikipedia', url: 'https://www.wikipedia.org' },
                                 { name: 'Docs', url: 'https://devdocs.io' }
                             ].map(site => (
@@ -260,7 +261,7 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                         </div>
 
                         <div className="mt-8 px-6 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-[10px] text-yellow-500/80 text-center max-w-xs">
-                            Note: Many sites (Google, Twitter) block embedding. Use the ↗ icon to open them externally.
+                            Note: Some external sites may mistakenly open in new tabs. DuckDuckGo provides the best embedded experience.
                         </div>
                     </div>
                 )}
