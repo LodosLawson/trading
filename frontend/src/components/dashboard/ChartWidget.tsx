@@ -14,7 +14,7 @@ export default function ChartWidget({ symbol = 'BINANCE:BTCUSDT', theme = 'dark'
         script.src = 'https://s3.tradingview.com/tv.js';
         script.async = true;
         script.onload = () => {
-            if ((window as any).TradingView) {
+            if ((window as any).TradingView && document.getElementById(containerId.current)) {
                 new (window as any).TradingView.widget({
                     autosize: true,
                     symbol: symbol,
