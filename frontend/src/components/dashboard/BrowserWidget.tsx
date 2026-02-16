@@ -25,13 +25,15 @@ const INITIAL_TAB: Tab = {
     historyIndex: 0
 };
 
+historyIndex: 0
+};
+
 const FAVORITES = [
-    { name: 'DuckDuckGo', url: 'https://duckduckgo.com' },
+    { name: 'Google', url: 'https://www.google.com/search?igu=1' },
     { name: 'Bing', url: 'https://www.bing.com' },
+    { name: 'Wikipedia', url: 'https://www.wikipedia.org' },
     { name: 'TradingView', url: 'https://www.tradingview.com' },
-    { name: 'CoinGecko', url: 'https://www.coingecko.com' },
-    { name: 'Crypto.com', url: 'https://crypto.com/exchange' },
-    { name: 'Wikipedia', url: 'https://www.wikipedia.org' }
+    { name: 'CoinGecko', url: 'https://www.coingecko.com' }
 ];
 
 export default function BrowserWidget({ className = '', mode = 'full' }: BrowserWidgetProps) {
@@ -87,8 +89,8 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
             if (url.includes('.') && !url.includes(' ')) {
                 finalUrl = `https://${url}`;
             } else {
-                // Use DuckDuckGo for better privacy/embedding support
-                finalUrl = `https://duckduckgo.com/?q=${encodeURIComponent(url)}&kae=d`; // kae=d forces dark theme if possible?
+                // Use Google with igu=1 which often allows embedding
+                finalUrl = `https://www.google.com/search?igu=1&q=${encodeURIComponent(url)}`;
             }
         }
 
@@ -242,7 +244,7 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
 
                         <div className="grid grid-cols-4 gap-6 px-8">
                             {[
-                                { name: 'DuckDuckGo', url: 'https://duckduckgo.com' },
+                                { name: 'Google', url: 'https://www.google.com/search?igu=1' },
                                 { name: 'Bing', url: 'https://www.bing.com' },
                                 { name: 'Wikipedia', url: 'https://www.wikipedia.org' },
                                 { name: 'Docs', url: 'https://devdocs.io' }
