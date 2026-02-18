@@ -261,7 +261,8 @@ export default function TerminalPage() {
                                     </div>
                                 )}
                             </motion.div>
-                        ))}
+                        );
+                    })}
                 </AnimatePresence>
 
                 {/* Add Widget Button (when editing) */}
