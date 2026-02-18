@@ -7,18 +7,24 @@ import { getUserSettings, saveUserSettings, UserSettings, DEFAULT_SETTINGS } fro
 import WindowFrame from '@/components/ui/WindowFrame';
 
 export default function SettingsPage() {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
-    const [loading, setLoading] = useState(true);
+    const [configLoading, setConfigLoading] = useState(true);
 
     useEffect(() => {
-        if (!user) return;
+        if (authLoading) return;
+
+        if (!user) {
+            router.push('/auth/login');
+            return;
+        }
+
         getUserSettings(user.uid).then(s => {
             setSettings(s);
-            setLoading(false);
+            setConfigLoading(false);
         });
-    }, [user]);
+    }, [user, authLoading, router]);
 
     const handleSave = async (newSettings: UserSettings) => {
         setSettings(newSettings);
@@ -43,7 +49,7 @@ export default function SettingsPage() {
         });
     };
 
-    if (loading) return <div className="min-h-screen bg-[#030304] flex items-center justify-center text-gray-500 font-mono">Loading Config...</div>;
+    if (authLoading || configLoading) return <div className="min-h-screen bg-[#030304] flex items-center justify-center text-gray-500 font-mono">Loading Config...</div>;
 
     return (
         <div className="min-h-screen bg-[#030304] text-white p-4 md:p-8 font-sans">
