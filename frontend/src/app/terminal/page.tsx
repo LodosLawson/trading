@@ -161,6 +161,18 @@ export default function TerminalPage() {
                 <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]"></div>
             </div>
 
+            {/* Settings Button (Absolute Top Right) */}
+            <button
+                onClick={() => alert('Settings functionality not yet implemented!')} // Placeholder for actual settings page
+                className="absolute top-4 right-4 z-50 p-2 text-gray-500 hover:text-white bg-black/50 backdrop-blur rounded-full border border-white/10 hover:border-white/30 transition-all"
+                title="System Configuration"
+            >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </button>
+
             {/* Header / Toolbar */}
             <header className="relative z-20 shrink-0 h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#0a0a0f]/80 backdrop-blur-md">
                 <div className="flex items-center gap-4">
@@ -185,7 +197,7 @@ export default function TerminalPage() {
             {/* Widget Grid */}
             <motion.main
                 layout
-                className={`relative z-10 flex-1 p-4 md:p-6 ${isMobile ? 'flex flex-col gap-8 pb-24' : 'grid grid-cols-12 auto-rows-[60px] gap-6 pb-6'} overflow-y-auto custom-scrollbar content-start`}
+                className={`relative z-10 flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 auto-rows-[60px] gap-6 pb-6 overflow-y-auto custom-scrollbar content-start`}
             >
                 <AnimatePresence>
                     {layout.map((widget, index) => (
@@ -196,53 +208,52 @@ export default function TerminalPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className={`relative group rounded-2xl overflow-hidden border bg-[#121218] shadow-lg ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'} ${isMobile ? (widget.type === 'BROWSER' || widget.type === 'CHART' ? 'w-full min-h-[500px]' : 'w-full min-h-[350px]') : ''}`}
-                            style={!isMobile ? {
-                                gridColumn: `span ${widget.colSpan}`,
+                            className={`relative group rounded-2xl overflow-hidden border bg-[#121218] shadow-lg ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'} col-span-12 lg:col-span-${widget.colSpan}`}
+                            style={{
                                 gridRow: `span ${widget.rowSpan}`,
-                            } : {}}
+                            } : { }}
                         >
-                            {/* Widget Content */}
-                            <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
-                                {renderWidgetContent(widget.type)}
+                    {/* Widget Content */}
+                    <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
+                        {renderWidgetContent(widget.type)}
+                    </div>
+
+                    {/* Edit Overlays */}
+                    {isEditing && (
+                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
+
+                            {/* Move Controls */}
+                            <div className="absolute top-2 left-2 flex gap-1">
+                                <button onClick={() => moveWidget(index, 'left')} disabled={index === 0} className="p-1.5 bg-white/10 hover:bg-white/20 rounded disabled:opacity-30">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                </button>
+                                <button onClick={() => moveWidget(index, 'right')} disabled={index === layout.length - 1} className="p-1.5 bg-white/10 hover:bg-white/20 rounded disabled:opacity-30">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                </button>
                             </div>
 
-                            {/* Edit Overlays */}
-                            {isEditing && (
-                                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
-
-                                    {/* Move Controls */}
-                                    <div className="absolute top-2 left-2 flex gap-1">
-                                        <button onClick={() => moveWidget(index, 'left')} disabled={index === 0} className="p-1.5 bg-white/10 hover:bg-white/20 rounded disabled:opacity-30">
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                                        </button>
-                                        <button onClick={() => moveWidget(index, 'right')} disabled={index === layout.length - 1} className="p-1.5 bg-white/10 hover:bg-white/20 rounded disabled:opacity-30">
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                                        </button>
+                            {/* Delete */}
+                            <button
+                                onClick={() => removeWidget(widget.id)}
+                                className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                <div className="col-span-12 md:col-span-3 row-span-4 min-h-[200px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-600/5 transition-all group">
+                                    <span className="text-xs text-gray-500 group-hover:text-blue-400 font-bold uppercase tracking-widest">Add Widget</span>
+                                    <div className="flex flex-wrap justify-center gap-2 px-4">
+                                        {AVAILABLE_WIDGETS.map(w => (
+                                            <button
+                                                key={w.type}
+                                                onClick={() => addWidget(w.type)}
+                                                className="px-3 py-1.5 bg-white/5 hover:bg-blue-600 hover:text-white text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded border border-white/5 transition-colors"
+                                            >
+                                                + {w.label}
+                                            </button>
+                                        ))}
                                     </div>
-
-                                    {/* Delete */}
-                                    <button
-                                        onClick={() => removeWidget(widget.id)}
-                                        className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                        <div className="col-span-12 md:col-span-3 row-span-4 min-h-[200px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-600/5 transition-all group">
-                                            <span className="text-xs text-gray-500 group-hover:text-blue-400 font-bold uppercase tracking-widest">Add Widget</span>
-                                            <div className="flex flex-wrap justify-center gap-2 px-4">
-                                                {AVAILABLE_WIDGETS.map(w => (
-                                                    <button
-                                                        key={w.type}
-                                                        onClick={() => addWidget(w.type)}
-                                                        className="px-3 py-1.5 bg-white/5 hover:bg-blue-600 hover:text-white text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded border border-white/5 transition-colors"
-                                                    >
-                                                        + {w.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                )}
-                                    </motion.main>
                                 </div>
-                            );
+                )}
+                            </motion.main>
+                        </div>
+                    );
 }

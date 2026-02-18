@@ -1,0 +1,120 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthProvider';
+import { getUserSettings, saveUserSettings, UserSettings, DEFAULT_SETTINGS } from '@/lib/userSettings';
+import WindowFrame from '@/components/dashboard/WindowFrame';
+
+export default function SettingsPage() {
+    const { user } = useAuth();
+    const router = useRouter();
+    const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!user) return;
+        getUserSettings(user.uid).then(s => {
+            setSettings(s);
+            setLoading(false);
+        });
+    }, [user]);
+
+    const handleSave = async (newSettings: UserSettings) => {
+        setSettings(newSettings);
+        if (user) {
+            await saveUserSettings(user.uid, newSettings);
+        }
+    };
+
+    const toggleTheme = () => {
+        const newTheme = settings.theme === 'dark' ? 'light' : 'dark';
+        handleSave({ ...settings, theme: newTheme });
+    };
+
+    const toggleWidgetEnabled = (widgetId: string) => {
+        const current = settings.widgets[widgetId];
+        handleSave({
+            ...settings,
+            widgets: {
+                ...settings.widgets,
+                [widgetId]: { ...current, visible: !current.visible }
+            }
+        });
+    };
+
+    if (loading) return <div className="min-h-screen bg-[#030304] flex items-center justify-center text-gray-500 font-mono">Loading Config...</div>;
+
+    return (
+        <div className="min-h-screen bg-[#030304] text-white p-4 md:p-8 font-sans">
+            <div className="max-w-4xl mx-auto space-y-8">
+
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-black tracking-tighter">SETTINGS</h1>
+                        <p className="text-gray-500 text-sm font-mono mt-1">SYSTEM CONFIGURATION</p>
+                    </div>
+                    <button
+                        onClick={() => router.push('/terminal')}
+                        className="px-6 py-2 bg-white/5 border border-white/10 rounded-full text-xs font-bold hover:bg-white/10 hover:text-blue-400 transition-colors"
+                    >
+                        RETURN TO TERMINAL
+                    </button>
+                </div>
+
+                {/* Mode Selection */}
+                <section className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-6">
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full" />
+                        Visual Mode
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button
+                            onClick={() => handleSave({ ...settings, theme: 'dark' })}
+                            className={`p-6 rounded-xl border transition-all text-left group ${settings.theme === 'dark' ? 'bg-blue-500/10 border-blue-500/50' : 'bg-white/5 border-transparent hover:border-white/10'}`}
+                        >
+                            <div className="text-lg font-bold mb-2 group-hover:text-blue-400">Cyber Dark</div>
+                            <p className="text-xs text-gray-500">High contrast, OLED optimized path tracing aesthetic.</p>
+                        </button>
+                        <button
+                            onClick={() => handleSave({ ...settings, theme: 'light' })}
+                            className={`p-6 rounded-xl border transition-all text-left group ${settings.theme === 'light' ? 'bg-blue-500/10 border-blue-500/50' : 'bg-white/5 border-transparent hover:border-white/10'}`}
+                        >
+                            <div className="text-lg font-bold mb-2 group-hover:text-blue-400">Corporate Light</div>
+                            <p className="text-xs text-gray-500">Clean, professional styling for bright environments.</p>
+                        </button>
+                    </div>
+                </section>
+
+                {/* Widget Management */}
+                <section className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-6">
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-purple-500 rounded-full" />
+                        Active Modules
+                    </h2>
+                    <p className="text-xs text-gray-500 mb-6">Enable or disable modules to appear in your Terminal Dock.</p>
+
+                    <div className="space-y-3">
+                        {Object.entries(settings.widgets).map(([id, config]) => (
+                            <div key={id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/5">
+                                <span className="font-mono text-sm capitalize">{id.replace(/-/g, ' ')}</span>
+                                <button
+                                    onClick={() => toggleWidgetEnabled(id)}
+                                    className={`w-12 h-6 rounded-full p-1 transition-colors ${config.visible ? 'bg-green-500/20' : 'bg-gray-800'}`}
+                                >
+                                    <div className={`w-4 h-4 rounded-full bg-white transition-transform ${config.visible ? 'translate-x-6 bg-green-400' : 'translate-x-0 bg-gray-500'}`} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                <div className="text-center text-xs text-gray-600 font-mono py-8">
+                    CHANGES AUTO-SAVED TO CLOUD
+                </div>
+
+            </div>
+        </div>
+    );
+}
