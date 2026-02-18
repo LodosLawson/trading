@@ -48,6 +48,27 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
         }
     }, [activeTabId]);
 
+    // Effect to handle iframe load events safely
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+
+        const handleLoadStart = () => setIsLoading(true);
+        const handleLoadStop = () => setIsLoading(false);
+        const handleError = () => {
+            setIsLoading(false);
+            // setError('Failed to load page.'); // Optional: handle error state
+        };
+
+        iframe.addEventListener('load', handleLoadStop);
+        iframe.addEventListener('error', handleError);
+
+        return () => {
+            iframe.removeEventListener('load', handleLoadStop);
+            iframe.removeEventListener('error', handleError);
+        };
+    }, []);
+
     // --- Tab Management ---
 
     const addTab = () => {
