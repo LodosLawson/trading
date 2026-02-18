@@ -239,4 +239,29 @@ export default function TerminalPage() {
                                         </div>
                                     </div>
                                 </div>
+                            )}
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+
+                {/* Add Widget Button (when editing) */}
+                {isEditing && (
+                    <div className="col-span-12 md:col-span-3 min-h-[200px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-600/5 transition-all group">
+                        <span className="text-xs text-gray-500 group-hover:text-blue-400 font-bold uppercase tracking-widest">Add Widget</span>
+                        <div className="flex flex-wrap justify-center gap-2 px-4">
+                            {AVAILABLE_WIDGETS.map(w => (
+                                <button
+                                    key={w.type}
+                                    onClick={() => addWidget(w.type)}
+                                    className="px-3 py-1.5 bg-white/5 hover:bg-blue-600 hover:text-white text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded border border-white/5 transition-colors"
+                                >
+                                    + {w.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </motion.main>
+        </div>
+    );
 }
