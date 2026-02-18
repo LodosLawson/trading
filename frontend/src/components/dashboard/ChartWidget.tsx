@@ -10,12 +10,18 @@ export default function ChartWidget({ symbol = 'BINANCE:BTCUSDT', theme = 'dark'
     useEffect(() => {
         if (viewMode !== 'tv') return;
 
-        const script = document.createElement('script');
-        script.src = 'https://s3.tradingview.com/tv.js';
-        script.async = true;
-        script.onload = () => {
-            if ((window as any).TradingView && document.getElementById(containerId.current)) {
-                new (window as any).TradingView.widget({
+        let tvWidget: any = null;
+
+        const initWidget = () => {
+            const container = document.getElementById(containerId.current);
+            if (!container) {
+                // Retry if container not found immediately (React strict mode / fast refresh edge case)
+                setTimeout(initWidget, 100);
+                return;
+            }
+
+            if ((window as any).TradingView) {
+                tvWidget = new (window as any).TradingView.widget({
                     autosize: true,
                     symbol: symbol,
                     interval: 'D',
@@ -34,10 +40,23 @@ export default function ChartWidget({ symbol = 'BINANCE:BTCUSDT', theme = 'dark'
                 });
             }
         };
+
+        const script = document.createElement('script');
+        script.src = 'https://s3.tradingview.com/tv.js';
+        script.async = true;
+        script.onload = initWidget;
         document.head.appendChild(script);
 
+        // Fallback: If script already loaded
+        if ((window as any).TradingView) {
+            initWidget();
+        }
+
         return () => {
-            // Cleanup if needed
+            if (tvWidget) {
+                // TradingView widget cleanup if API supports it (often it doesn't, but we can clear innerHTML safely handled by React unmount)
+                tvWidget = null;
+            }
         };
     }, [symbol, theme, viewMode]);
 
