@@ -211,49 +211,49 @@ export default function TerminalPage() {
                             className={`relative group rounded-2xl overflow-hidden border bg-[#121218] shadow-lg ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'} col-span-12 lg:col-span-${widget.colSpan}`}
                             style={{
                                 gridRow: `span ${widget.rowSpan}`,
-                            } : { }}
+                            }}
                         >
-                    {/* Widget Content */}
-                    <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
-                        {renderWidgetContent(widget.type)}
-                    </div>
-
-                    {/* Edit Overlays */}
-                    {isEditing && (
-                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
-
-                            {/* Move Controls */}
-                            <div className="absolute top-2 left-2 flex gap-1">
-                                <button onClick={() => moveWidget(index, 'left')} disabled={index === 0} className="p-1.5 bg-white/10 hover:bg-white/20 rounded disabled:opacity-30">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                                </button>
-                                <button onClick={() => moveWidget(index, 'right')} disabled={index === layout.length - 1} className="p-1.5 bg-white/10 hover:bg-white/20 rounded disabled:opacity-30">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                                </button>
+                            {/* Widget Content */}
+                            <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
+                                {renderWidgetContent(widget.type)}
                             </div>
 
-                            {/* Delete */}
-                            <button
-                                onClick={() => removeWidget(widget.id)}
-                                className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                <div className="col-span-12 md:col-span-3 row-span-4 min-h-[200px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-600/5 transition-all group">
-                                    <span className="text-xs text-gray-500 group-hover:text-blue-400 font-bold uppercase tracking-widest">Add Widget</span>
-                                    <div className="flex flex-wrap justify-center gap-2 px-4">
-                                        {AVAILABLE_WIDGETS.map(w => (
-                                            <button
-                                                key={w.type}
-                                                onClick={() => addWidget(w.type)}
-                                                className="px-3 py-1.5 bg-white/5 hover:bg-blue-600 hover:text-white text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded border border-white/5 transition-colors"
-                                            >
-                                                + {w.label}
-                                            </button>
-                                        ))}
+                            {/* Edit Overlays */}
+                            {isEditing && (
+                                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
+
+                                    {/* Move Controls */}
+                                    <div className="absolute top-2 left-2 flex gap-1">
+                                        <button onClick={() => moveWidget(index, 'left')} disabled={index === 0} className="p-1.5 bg-white/10 hover:bg-white/20 rounded disabled:opacity-30">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                        </button>
+                                        <button onClick={() => moveWidget(index, 'right')} disabled={index === layout.length - 1} className="p-1.5 bg-white/10 hover:bg-white/20 rounded disabled:opacity-30">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                        </button>
                                     </div>
-                                </div>
+
+                                    {/* Delete */}
+                                    <button
+                                        onClick={() => removeWidget(widget.id)}
+                                        className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                        <div className="col-span-12 md:col-span-3 row-span-4 min-h-[200px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-600/5 transition-all group">
+                                            <span className="text-xs text-gray-500 group-hover:text-blue-400 font-bold uppercase tracking-widest">Add Widget</span>
+                                            <div className="flex flex-wrap justify-center gap-2 px-4">
+                                                {AVAILABLE_WIDGETS.map(w => (
+                                                    <button
+                                                        key={w.type}
+                                                        onClick={() => addWidget(w.type)}
+                                                        className="px-3 py-1.5 bg-white/5 hover:bg-blue-600 hover:text-white text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded border border-white/5 transition-colors"
+                                                    >
+                                                        + {w.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                 )}
-                            </motion.main>
-                        </div>
-                    );
+                                    </motion.main>
+                                </div>
+                            );
 }
