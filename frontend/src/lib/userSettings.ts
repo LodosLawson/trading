@@ -7,19 +7,24 @@ export interface WidgetConfig {
     order?: number;
 }
 
+export type LayoutMode = 'grid' | 'list' | 'window' | 'page';
+
 export interface UserSettings {
     theme: 'dark' | 'light';
+    layoutMode: LayoutMode;
     widgets: Record<string, WidgetConfig>;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
     theme: 'dark',
+    layoutMode: 'grid',
     widgets: {
-        'market-overview': { id: 'market-overview', visible: true },
-        'chart-widget': { id: 'chart-widget', visible: true },
-        'news-feed': { id: 'news-feed', visible: true },
-        'browser-widget': { id: 'browser-widget', visible: true },
-        'ai-chat': { id: 'ai-chat', visible: true },
+        'market-overview': { id: 'market-overview', visible: true, order: 0 },
+        'chart-widget': { id: 'chart-widget', visible: true, order: 1 },
+        'news-feed': { id: 'news-feed', visible: true, order: 2 },
+        'ai-chat': { id: 'ai-chat', visible: true, order: 3 },
+        'browser-widget': { id: 'browser-widget', visible: true, order: 4 },
+        'live-wire': { id: 'live-wire', visible: true, order: 5 },
     }
 };
 

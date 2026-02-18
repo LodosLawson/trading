@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthProvider';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { getUserSettings, DEFAULT_SETTINGS, UserSettings } from '@/lib/userSettings';
 import WindowFrame from '@/components/ui/WindowFrame';
 import LiveNewsWidget from '@/components/dashboard/LiveNewsWidget';
 import MarketWidget from '@/components/dashboard/MarketWidget';
@@ -47,17 +48,27 @@ const AVAILABLE_WIDGETS: { type: WidgetType; label: string; defaultCol: number; 
 export default function TerminalPage() {
     const { user } = useAuth();
     const router = useRouter();
+    const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
     const [layout, setLayout] = useState<Widget[]>(DEFAULT_LAYOUT);
     const [isEditing, setIsEditing] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
     // Initialize & Load Layout
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        const checkMobile = () => setIsMobile(window.innerWidth < 1024);
         checkMobile();
         window.addEventListener('resize', checkMobile);
+
+        async function loadSettings() {
+            if (user) {
+                const s = await getUserSettings(user.uid);
+                setSettings(s);
+            }
+        }
+        loadSettings();
+
         return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+    }, [user]);
 
     // --- ACTIONS ---
 
@@ -199,52 +210,58 @@ export default function TerminalPage() {
             {/* Widget Grid */}
             <motion.main
                 layout
-                className={`relative z-10 flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 auto-rows-[60px] gap-6 pb-6 overflow-y-auto custom-scrollbar content-start`}
+                className={`relative z-10 flex-1 p-4 md:p-6 ${settings.layoutMode === 'list' ? 'flex flex-col gap-6' : 'grid grid-cols-1 lg:grid-cols-12 auto-rows-[60px] gap-6'} pb-6 overflow-y-auto custom-scrollbar content-start`}
             >
                 <AnimatePresence>
-                    {layout.map((widget, index) => (
-                        <motion.div
-                            layout
-                            key={widget.id}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            transition={{ duration: 0.2 }}
-                            className={`relative group rounded-2xl overflow-hidden border bg-[#121218] shadow-lg ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'} ${isMobile ? 'w-full min-h-[400px]' : ''}`}
-                            style={!isMobile ? {
-                                gridColumn: `span ${widget.colSpan}`,
-                                gridRow: `span ${widget.rowSpan}`,
-                            } : {}}
-                        >
-                            {/* Widget Content */}
-                            <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
-                                {renderWidgetContent(widget.type)}
-                            </div>
+                    {layout.map((widget, index) => {
+                        // Filter visibility based on settings if needed, for now assumes layout matches enabled widgets
+                        const config = settings.widgets[widget.id] || { visible: true }; // Fallback
+                        // actually layout state defines position, settings defines visibility.
+                        // Ideally we sync them. For now let's just render layout items.
 
-                            {/* Edit Overlay */}
-                            {isEditing && (
-                                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm border-2 border-dashed border-blue-500/50 rounded-2xl">
-                                    <button
-                                        onClick={() => removeWidget(widget.id)}
-                                        className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                    </button>
+                        return (
+                            <motion.div
+                                layout
+                                key={widget.id}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{ duration: 0.2 }}
+                                className={`relative group rounded-2xl overflow-hidden border bg-[#121218] shadow-lg ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'} ${isMobile || settings.layoutMode === 'list' ? 'w-full min-h-[400px]' : ''}`}
+                                style={!isMobile && settings.layoutMode === 'grid' ? {
+                                    gridColumn: `span ${widget.colSpan}`,
+                                    gridRow: `span ${widget.rowSpan}`,
+                                } : {}}
+                            >
+                                {/* Widget Content */}
+                                <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
+                                    {renderWidgetContent(widget.type)}
+                                </div>
 
-                                    <div className="flex items-center gap-4 bg-black/60 px-4 py-2 rounded-full border border-white/10">
-                                        <div className="flex flex-col items-center gap-1">
-                                            <span className="text-[9px] text-gray-400 uppercase">Width</span>
-                                            <div className="flex gap-1">
-                                                <button onClick={() => resizeWidget(widget.id, -1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
-                                                <span className="font-mono text-xs w-4 text-center">{widget.colSpan}</span>
-                                                <button onClick={() => resizeWidget(widget.id, 1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
+                                {/* Edit Overlay */}
+                                {isEditing && (
+                                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm border-2 border-dashed border-blue-500/50 rounded-2xl">
+                                        <button
+                                            onClick={() => removeWidget(widget.id)}
+                                            className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+
+                                        <div className="flex items-center gap-4 bg-black/60 px-4 py-2 rounded-full border border-white/10">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className="text-[9px] text-gray-400 uppercase">Width</span>
+                                                <div className="flex gap-1">
+                                                    <button onClick={() => resizeWidget(widget.id, -1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
+                                                    <span className="font-mono text-xs w-4 text-center">{widget.colSpan}</span>
+                                                    <button onClick={() => resizeWidget(widget.id, 1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-                        </motion.div>
-                    ))}
+                                )}
+                            </motion.div>
+                        ))}
                 </AnimatePresence>
 
                 {/* Add Widget Button (when editing) */}

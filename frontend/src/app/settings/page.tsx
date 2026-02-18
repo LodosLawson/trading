@@ -63,7 +63,32 @@ export default function SettingsPage() {
                     </button>
                 </div>
 
-                {/* Mode Selection */}
+                {/* Layout Selection */}
+                <section className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-6">
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-orange-500 rounded-full" />
+                        Workspace Layout
+                    </h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {['grid', 'list', 'window', 'page'].map((mode) => (
+                            <button
+                                key={mode}
+                                onClick={() => handleSave({ ...settings, layoutMode: mode as any })}
+                                className={`p-4 rounded-xl border transition-all text-center group ${settings.layoutMode === mode ? 'bg-orange-500/10 border-orange-500/50 text-orange-400' : 'bg-white/5 border-transparent hover:border-white/10 text-gray-400'}`}
+                            >
+                                <div className="text-sm font-bold uppercase tracking-wider mb-1">{mode}</div>
+                                <div className="text-[10px] opacity-60">
+                                    {mode === 'grid' && 'Structured Dashboard'}
+                                    {mode === 'list' && 'Vertical Feed'}
+                                    {mode === 'window' && 'Floating Windows'}
+                                    {mode === 'page' && 'Focused Views'}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Visual Mode Selection */}
                 <section className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-6">
                     <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                         <span className="w-2 h-2 bg-blue-500 rounded-full" />
