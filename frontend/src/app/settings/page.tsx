@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthProvider';
 import { getUserSettings, saveUserSettings, UserSettings, DEFAULT_SETTINGS } from '@/lib/userSettings';
-import WindowFrame from '@/components/dashboard/WindowFrame';
+import WindowFrame from '@/components/ui/WindowFrame';
 
 export default function SettingsPage() {
     const { user } = useAuth();
