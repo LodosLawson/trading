@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthProvider';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -45,6 +46,7 @@ const AVAILABLE_WIDGETS: { type: WidgetType; label: string; defaultCol: number; 
 
 export default function TerminalPage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [layout, setLayout] = useState<Widget[]>(DEFAULT_LAYOUT);
     const [isEditing, setIsEditing] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -163,7 +165,7 @@ export default function TerminalPage() {
 
             {/* Settings Button (Absolute Top Right) */}
             <button
-                onClick={() => alert('Settings functionality not yet implemented!')} // Placeholder for actual settings page
+                onClick={() => router.push('/settings')}
                 className="absolute top-4 right-4 z-50 p-2 text-gray-500 hover:text-white bg-black/50 backdrop-blur rounded-full border border-white/10 hover:border-white/30 transition-all"
                 title="System Configuration"
             >
@@ -208,10 +210,11 @@ export default function TerminalPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className={`relative group rounded-2xl overflow-hidden border bg-[#121218] shadow-lg ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'} col-span-12 lg:col-span-${widget.colSpan}`}
-                            style={{
+                            className={`relative group rounded-2xl overflow-hidden border bg-[#121218] shadow-lg ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'} ${isMobile ? 'w-full min-h-[400px]' : ''}`}
+                            style={!isMobile ? {
+                                gridColumn: `span ${widget.colSpan}`,
                                 gridRow: `span ${widget.rowSpan}`,
-                            }}
+                            } : {}}
                         >
                             {/* Widget Content */}
                             <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
