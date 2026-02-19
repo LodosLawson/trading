@@ -57,20 +57,26 @@ export default function WidgetContainer({
             dragListener={false} // Enable drag only via controls
             dragControls={dragControls}
             dragMomentum={false}
+            dragElastic={0} // Prevent rubber banding
             onDragEnd={(_, info: PanInfo) => {
                 if (settings.layoutMode !== 'window') return;
                 updateWindowPosition(widgetId, info.offset.x, info.offset.y);
             }}
 
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={false}
             animate={{
                 opacity: 1,
                 scale: 1,
-                zIndex: activeWindow === widgetId ? 50 : winConfig.z,
+                zIndex: activeWindow === widgetId ? 100 : (winConfig.z || 1), // Higher Z for active
+            }}
+            style={{
                 x: settings.layoutMode === 'window' ? winConfig.x : 0,
                 y: settings.layoutMode === 'window' ? winConfig.y : 0,
                 width: settings.layoutMode === 'window' ? winConfig.w : 'auto',
                 height: settings.layoutMode === 'window' ? winConfig.h : 'auto',
+                position: settings.layoutMode === 'window' ? 'absolute' : 'relative',
+                gridColumn: !isMobile && settings.layoutMode === 'grid' ? `span ${colSpan}` : undefined,
+                gridRow: !isMobile && settings.layoutMode === 'grid' ? `span ${rowSpan}` : undefined,
             }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
@@ -78,14 +84,9 @@ export default function WidgetContainer({
             className={`
                 relative group rounded-2xl transition-shadow shadow-lg
                 ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'}
-                ${settings.layoutMode === 'window' ? 'absolute border bg-[#121218]' : ''}
+                ${settings.layoutMode === 'window' ? 'border bg-[#121218]' : ''}
                 ${!isMobile && settings.layoutMode === 'grid' ? '' : 'w-full min-h-[400px]'}
             `}
-            style={
-                !isMobile && settings.layoutMode === 'grid'
-                    ? { gridColumn: `span ${colSpan}`, gridRow: `span ${rowSpan}` }
-                    : {}
-            }
         >
             {/* Render Widget Content with DragControls */}
             <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
