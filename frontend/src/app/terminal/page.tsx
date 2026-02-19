@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthProvider';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getUserSettings, DEFAULT_SETTINGS, UserSettings } from '@/lib/userSettings';
+import { getUserSettings, saveUserSettings, DEFAULT_SETTINGS, UserSettings } from '@/lib/userSettings';
 import WindowFrame from '@/components/ui/WindowFrame';
 import LiveNewsWidget from '@/components/dashboard/LiveNewsWidget';
 import MarketWidget from '@/components/dashboard/MarketWidget';
