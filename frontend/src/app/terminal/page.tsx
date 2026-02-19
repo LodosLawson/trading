@@ -120,8 +120,22 @@ export default function TerminalPage() {
 
     const [activeSymbol, setActiveSymbol] = useState('BINANCE:BTCUSDT');
 
+    // Helper for consistent defaults
+    const getDefaultWindowConfig = (id: string) => {
+        const index = layout.findIndex(w => w.id === id);
+        // Fallback if not found (shouldn't happen)
+        const idx = index !== -1 ? index : 0;
+        return {
+            x: 100 + (idx * 40),
+            y: 100 + (idx * 40),
+            w: 500,
+            h: 400,
+            z: 10 + idx
+        };
+    };
+
     const updateWindowPosition = (id: string, dx: number, dy: number) => {
-        const current = settings.widgets[id]?.window || { x: 100, y: 100, w: 400, h: 300, z: 10 };
+        const current = settings.widgets[id]?.window || getDefaultWindowConfig(id);
         const newWindow = { ...current, x: current.x + dx, y: current.y + dy };
         const newWidgets = { ...settings.widgets, [id]: { ...settings.widgets[id], window: newWindow } };
         setSettings({ ...settings, widgets: newWidgets });
@@ -129,7 +143,7 @@ export default function TerminalPage() {
     };
 
     const handleResize = (id: string, dx: number, dy: number) => {
-        const current = settings.widgets[id]?.window || { x: 100, y: 100, w: 400, h: 300, z: 10 };
+        const current = settings.widgets[id]?.window || getDefaultWindowConfig(id);
         const newWindow = { ...current, w: Math.max(300, current.w + dx), h: Math.max(200, current.h + dy) };
         const newWidgets = { ...settings.widgets, [id]: { ...settings.widgets[id], window: newWindow } };
         // Optimization: Debounce sending to server? For now setState is fine, visually instant.
@@ -248,13 +262,7 @@ export default function TerminalPage() {
                         if (!config.visible) return null;
 
                         // Window Mode Config
-                        const winConfig = config.window || {
-                            x: 100 + (index * 40),
-                            y: 100 + (index * 40),
-                            w: 500,
-                            h: 400,
-                            z: 10 + index
-                        };
+                        const winConfig = config.window || getDefaultWindowConfig(widget.id);
 
                         return (
                             <WidgetContainer
