@@ -119,9 +119,23 @@ export default function TerminalPage() {
 
     const [activeSymbol, setActiveSymbol] = useState('BINANCE:BTCUSDT');
 
+    const handleResize = (id: string, dx: number, dy: number) => {
+        const current = settings.widgets[id]?.window || { x: 100, y: 100, w: 400, h: 300, z: 10 };
+        const newWindow = { ...current, w: Math.max(300, current.w + dx), h: Math.max(200, current.h + dy) };
+        const newWidgets = { ...settings.widgets, [id]: { ...settings.widgets[id], window: newWindow } };
+        // Optimization: Debounce sending to server? For now setState is fine, visually instant.
+        setSettings({ ...settings, widgets: newWidgets });
+    };
+
+    const handleResizeEnd = async (id: string) => {
+        await saveUserSettings(user?.uid || 'guest', settings);
+    };
+
+    const [activeWindow, setActiveWindow] = useState<string | null>(null);
+
     // --- RENDERERS ---
 
-    const renderWidgetContent = (type: WidgetType) => {
+    const renderWidgetContent = (type: WidgetType, id: string) => {
         let content = null;
         let title = '';
 
@@ -158,7 +172,14 @@ export default function TerminalPage() {
         }
 
         return (
-            <WindowFrame title={title} className="h-full">
+            <WindowFrame
+                title={title}
+                className="h-full"
+                dragEnabled={false} // Handled by outer wrapper
+                onFocus={() => setActiveWindow(id)}
+                onResize={(dx, dy) => handleResize(id, dx, dy)}
+                onResizeEnd={() => handleResizeEnd(id)}
+            >
                 {content}
             </WindowFrame>
         );
@@ -208,37 +229,73 @@ export default function TerminalPage() {
 
             {/* Widget Grid */}
             <motion.main
-                layout
-                className={`relative z-10 flex-1 p-4 md:p-6 ${settings.layoutMode === 'list' ? 'flex flex-col gap-6' : 'grid grid-cols-1 lg:grid-cols-12 auto-rows-[60px] gap-6'} pb-6 overflow-y-auto custom-scrollbar content-start`}
+                layout={settings.layoutMode !== 'window'}
+                className={`relative z-10 flex-1 p-4 md:p-6 ${settings.layoutMode === 'list' ? 'flex flex-col gap-6' : (settings.layoutMode === 'window' ? 'block' : 'grid grid-cols-1 lg:grid-cols-12 auto-rows-[60px] gap-6')} pb-6 overflow-y-auto custom-scrollbar content-start`}
             >
                 <AnimatePresence>
                     {layout.map((widget, index) => {
-                        // Filter visibility based on settings if needed, for now assumes layout matches enabled widgets
-                        const config = settings.widgets[widget.id] || { visible: true }; // Fallback
-                        // actually layout state defines position, settings defines visibility.
-                        // Ideally we sync them. For now let's just render layout items.
+                        const config = settings.widgets[widget.id] || { visible: true };
+                        if (!config.visible) return null;
+
+                        // Window Mode Config
+                        const winConfig = config.window || {
+                            x: 100 + (index * 40),
+                            y: 100 + (index * 40),
+                            w: 500,
+                            h: 400,
+                            z: 10 + index
+                        };
 
                         return (
                             <motion.div
-                                layout
+                                layout={settings.layoutMode !== 'window'}
                                 key={widget.id}
+                                onMouseDown={() => setActiveWindow(widget.id)}
+
+                                // Drag Props (Window Mode Only)
+                                drag={settings.layoutMode === 'window'}
+                                dragHandle=".window-header"
+                                dragMomentum={false}
+                                onDragEnd={(_, info) => {
+                                    if (settings.layoutMode !== 'window') return;
+                                    const newWindow = { ...winConfig, x: winConfig.x + info.offset.x, y: winConfig.y + info.offset.y };
+                                    const newWidgets = { ...settings.widgets, [widget.id]: { ...settings.widgets[widget.id], window: newWindow } };
+                                    setSettings({ ...settings, widgets: newWidgets });
+                                    saveUserSettings(user?.uid || 'guest', { ...settings, widgets: newWidgets });
+                                }}
+
                                 initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
+                                animate={{
+                                    opacity: 1,
+                                    scale: 1,
+                                    zIndex: activeWindow === widget.id ? 50 : winConfig.z,
+                                    x: settings.layoutMode === 'window' ? winConfig.x : 0,
+                                    y: settings.layoutMode === 'window' ? winConfig.y : 0,
+                                    width: settings.layoutMode === 'window' ? winConfig.w : 'auto',
+                                    height: settings.layoutMode === 'window' ? winConfig.h : 'auto',
+                                }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ duration: 0.2 }}
-                                className={`relative group rounded-2xl overflow-hidden border bg-[#121218] shadow-lg ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'} ${isMobile || settings.layoutMode === 'list' ? 'w-full min-h-[400px]' : ''}`}
-                                style={!isMobile && settings.layoutMode === 'grid' ? {
-                                    gridColumn: `span ${widget.colSpan}`,
-                                    gridRow: `span ${widget.rowSpan}`,
-                                } : {}}
+
+                                className={`
+                                    relative group rounded-2xl transition-shadow shadow-lg
+                                    ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'}
+                                    ${settings.layoutMode === 'window' ? 'absolute border bg-[#121218]' : ''}
+                                    ${!isMobile && settings.layoutMode === 'grid' ? '' : 'w-full min-h-[400px]'}
+                                `}
+                                style={
+                                    !isMobile && settings.layoutMode === 'grid'
+                                        ? { gridColumn: `span ${widget.colSpan}`, gridRow: `span ${widget.rowSpan}` }
+                                        : {}
+                                }
                             >
                                 {/* Widget Content */}
                                 <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
-                                    {renderWidgetContent(widget.type)}
+                                    {renderWidgetContent(widget.type, widget.id)}
                                 </div>
 
-                                {/* Edit Overlay */}
-                                {isEditing && (
+                                {/* Edit Overlay (Only for Grid/List mode editing) */}
+                                {isEditing && settings.layoutMode !== 'window' && (
                                     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm border-2 border-dashed border-blue-500/50 rounded-2xl">
                                         <button
                                             onClick={() => removeWidget(widget.id)}
@@ -254,6 +311,15 @@ export default function TerminalPage() {
                                                     <button onClick={() => resizeWidget(widget.id, -1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
                                                     <span className="font-mono text-xs w-4 text-center">{widget.colSpan}</span>
                                                     <button onClick={() => resizeWidget(widget.id, 1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col items-center gap-1 border-l border-white/10 pl-4">
+                                                <span className="text-[9px] text-gray-400 uppercase">Height</span>
+                                                <div className="flex gap-1">
+                                                    <button onClick={() => resizeWidget(widget.id, 0, -1)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
+                                                    <span className="font-mono text-xs w-4 text-center">{widget.rowSpan}</span>
+                                                    <button onClick={() => resizeWidget(widget.id, 0, 1)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
                                                 </div>
                                             </div>
                                         </div>
