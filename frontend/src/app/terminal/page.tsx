@@ -120,6 +120,14 @@ export default function TerminalPage() {
 
     const [activeSymbol, setActiveSymbol] = useState('BINANCE:BTCUSDT');
 
+    const updateWindowPosition = (id: string, dx: number, dy: number) => {
+        const current = settings.widgets[id]?.window || { x: 100, y: 100, w: 400, h: 300, z: 10 };
+        const newWindow = { ...current, x: current.x + dx, y: current.y + dy };
+        const newWidgets = { ...settings.widgets, [id]: { ...settings.widgets[id], window: newWindow } };
+        setSettings({ ...settings, widgets: newWidgets });
+        saveUserSettings(user?.uid || 'guest', { ...settings, widgets: newWidgets });
+    };
+
     const handleResize = (id: string, dx: number, dy: number) => {
         const current = settings.widgets[id]?.window || { x: 100, y: 100, w: 400, h: 300, z: 10 };
         const newWindow = { ...current, w: Math.max(300, current.w + dx), h: Math.max(200, current.h + dy) };
