@@ -266,7 +266,6 @@ export default function TerminalPage() {
                                 {(dragControls) => renderWidgetContent(widget.type, widget.id, dragControls)}
                             </WidgetContainer>
                         );
-                        );
                     })}
                 </AnimatePresence>
 
