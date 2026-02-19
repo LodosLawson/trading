@@ -248,85 +248,25 @@ export default function TerminalPage() {
                         };
 
                         return (
-                            <motion.div
-                                layout={settings.layoutMode !== 'window'}
+                        return (
+                            <WidgetContainer
                                 key={widget.id}
-                                onMouseDown={() => setActiveWindow(widget.id)}
-
-                                // Drag Props (Window Mode Only)
-                                drag={settings.layoutMode === 'window'}
-                                dragHandle=".window-header"
-                                dragMomentum={false}
-                                onDragEnd={(_, info) => {
-                                    if (settings.layoutMode !== 'window') return;
-                                    const newWindow = { ...winConfig, x: winConfig.x + info.offset.x, y: winConfig.y + info.offset.y };
-                                    const newWidgets = { ...settings.widgets, [widget.id]: { ...settings.widgets[widget.id], window: newWindow } };
-                                    setSettings({ ...settings, widgets: newWidgets });
-                                    saveUserSettings(user?.uid || 'guest', { ...settings, widgets: newWidgets });
-                                }}
-
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{
-                                    opacity: 1,
-                                    scale: 1,
-                                    zIndex: activeWindow === widget.id ? 50 : winConfig.z,
-                                    x: settings.layoutMode === 'window' ? winConfig.x : 0,
-                                    y: settings.layoutMode === 'window' ? winConfig.y : 0,
-                                    width: settings.layoutMode === 'window' ? winConfig.w : 'auto',
-                                    height: settings.layoutMode === 'window' ? winConfig.h : 'auto',
-                                }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                transition={{ duration: 0.2 }}
-
-                                className={`
-                                    relative group rounded-2xl transition-shadow shadow-lg
-                                    ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'}
-                                    ${settings.layoutMode === 'window' ? 'absolute border bg-[#121218]' : ''}
-                                    ${!isMobile && settings.layoutMode === 'grid' ? '' : 'w-full min-h-[400px]'}
-                                `}
-                                style={
-                                    !isMobile && settings.layoutMode === 'grid'
-                                        ? { gridColumn: `span ${widget.colSpan}`, gridRow: `span ${widget.rowSpan}` }
-                                        : {}
-                                }
+                                widgetId={widget.id}
+                                settings={settings}
+                                isEditing={isEditing}
+                                isMobile={isMobile}
+                                colSpan={widget.colSpan}
+                                rowSpan={widget.rowSpan}
+                                index={index}
+                                activeWindow={activeWindow}
+                                setActiveWindow={setActiveWindow}
+                                updateWindowPosition={updateWindowPosition}
+                                onRemove={removeWidget}
+                                onResize={resizeWidget}
                             >
-                                {/* Widget Content */}
-                                <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
-                                    {renderWidgetContent(widget.type, widget.id)}
-                                </div>
-
-                                {/* Edit Overlay (Only for Grid/List mode editing) */}
-                                {isEditing && settings.layoutMode !== 'window' && (
-                                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm border-2 border-dashed border-blue-500/50 rounded-2xl">
-                                        <button
-                                            onClick={() => removeWidget(widget.id)}
-                                            className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                        </button>
-
-                                        <div className="flex items-center gap-4 bg-black/60 px-4 py-2 rounded-full border border-white/10">
-                                            <div className="flex flex-col items-center gap-1">
-                                                <span className="text-[9px] text-gray-400 uppercase">Width</span>
-                                                <div className="flex gap-1">
-                                                    <button onClick={() => resizeWidget(widget.id, -1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
-                                                    <span className="font-mono text-xs w-4 text-center">{widget.colSpan}</span>
-                                                    <button onClick={() => resizeWidget(widget.id, 1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex flex-col items-center gap-1 border-l border-white/10 pl-4">
-                                                <span className="text-[9px] text-gray-400 uppercase">Height</span>
-                                                <div className="flex gap-1">
-                                                    <button onClick={() => resizeWidget(widget.id, 0, -1)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
-                                                    <span className="font-mono text-xs w-4 text-center">{widget.rowSpan}</span>
-                                                    <button onClick={() => resizeWidget(widget.id, 0, 1)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </motion.div>
+                                {(dragControls) => renderWidgetContent(widget.type, widget.id, dragControls)}
+                            </WidgetContainer>
+                        );
                         );
                     })}
                 </AnimatePresence>
