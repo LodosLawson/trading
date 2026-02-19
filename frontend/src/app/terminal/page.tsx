@@ -60,10 +60,9 @@ export default function TerminalPage() {
         window.addEventListener('resize', checkMobile);
 
         async function loadSettings() {
-            if (user) {
-                const s = await getUserSettings(user.uid);
-                setSettings(s);
-            }
+            const uid = user?.uid || 'guest';
+            const s = await getUserSettings(uid);
+            setSettings(s);
         }
         loadSettings();
 

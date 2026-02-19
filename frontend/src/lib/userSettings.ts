@@ -8,16 +8,19 @@ export interface WidgetConfig {
 }
 
 export type LayoutMode = 'grid' | 'list' | 'window' | 'page';
+export type NavigationMode = 'sidebar' | 'hidden';
 
 export interface UserSettings {
     theme: 'dark' | 'light';
     layoutMode: LayoutMode;
+    navigationMode: NavigationMode;
     widgets: Record<string, WidgetConfig>;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
     theme: 'dark',
     layoutMode: 'grid',
+    navigationMode: 'sidebar',
     widgets: {
         'market-overview': { id: 'market-overview', visible: true, order: 0 },
         'chart-widget': { id: 'chart-widget', visible: true, order: 1 },

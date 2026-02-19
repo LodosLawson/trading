@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthProvider';
 import { getUserSettings, saveUserSettings, UserSettings, DEFAULT_SETTINGS } from '@/lib/userSettings';
-import WindowFrame from '@/components/ui/WindowFrame';
+import { motion } from 'framer-motion';
 
 export default function SettingsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -15,142 +15,167 @@ export default function SettingsPage() {
     useEffect(() => {
         if (authLoading) return;
 
-        if (!user) {
-            router.push('/auth/login');
-            return;
-        }
-
-        getUserSettings(user.uid).then(s => {
+        const uid = user?.uid || 'guest';
+        getUserSettings(uid).then(s => {
             setSettings(s);
             setConfigLoading(false);
         });
-    }, [user, authLoading, router]);
+    }, [user, authLoading]);
 
     const handleSave = async (newSettings: UserSettings) => {
         setSettings(newSettings);
-        if (user) {
-            await saveUserSettings(user.uid, newSettings);
-        }
+        const uid = user?.uid || 'guest';
+        await saveUserSettings(uid, newSettings);
     };
 
-    const toggleTheme = () => {
-        const newTheme = settings.theme === 'dark' ? 'light' : 'dark';
-        handleSave({ ...settings, theme: newTheme });
-    };
-
-    const toggleWidgetEnabled = (widgetId: string) => {
-        const current = settings.widgets[widgetId];
-        handleSave({
-            ...settings,
-            widgets: {
-                ...settings.widgets,
-                [widgetId]: { ...current, visible: !current.visible }
-            }
-        });
-    };
-
-    if (authLoading || configLoading) return <div className="min-h-screen bg-[#030304] flex items-center justify-center text-gray-500 font-mono">Loading Config...</div>;
+    if (authLoading || configLoading) return (
+        <div className="min-h-screen bg-[#030304] flex items-center justify-center">
+            <div className="animate-pulse text-xs font-mono tracking-widest text-gray-500">SYSTEM_INIT...</div>
+        </div>
+    );
 
     return (
-        <div className="min-h-screen bg-[#030304] text-white p-4 md:p-8 font-sans">
-            <div className="max-w-4xl mx-auto space-y-8">
+        <div className="min-h-screen bg-[#030304] text-white font-sans selection:bg-blue-500 selection:text-black overflow-y-auto">
+            {/* Background FX */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-900/10 rounded-full blur-[120px]" />
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[120px]" />
+                <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.02]" />
+            </div>
+
+            <div className="relative z-10 max-w-5xl mx-auto p-6 md:p-12 space-y-12">
 
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/5 pb-8">
                     <div>
-                        <h1 className="text-3xl font-black tracking-tighter">SETTINGS</h1>
-                        <div className="flex items-center gap-2 mt-1">
-                            <p className="text-gray-500 text-sm font-mono">SYSTEM CONFIGURATION</p>
-                            {user ? (
-                                <span className="text-[10px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded border border-green-500/20">CLOUD SYNC ACTIVE</span>
-                            ) : (
-                                <span className="text-[10px] bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded border border-yellow-500/20">LOCAL STORAGE (GUEST)</span>
-                            )}
+                        <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-2">
+                            SYSTEM <span className="text-gray-600">CONFIG</span>
+                        </h1>
+                        <div className="flex items-center gap-3">
+                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${user ? 'bg-green-500/5 border-green-500/20 text-green-500' : 'bg-yellow-500/5 border-yellow-500/20 text-yellow-500'}`}>
+                                {user ? 'Cloud Sync Active' : 'Local Guest Mode'}
+                            </span>
+                            <span className="text-gray-600 text-[10px] uppercase tracking-wider">v2.4.0-Stable</span>
                         </div>
                     </div>
+
                     <button
                         onClick={() => router.push('/terminal')}
-                        className="px-6 py-2 bg-white/5 border border-white/10 rounded-full text-xs font-bold hover:bg-white/10 hover:text-blue-400 transition-colors"
+                        className="group flex items-center gap-3 pl-4 pr-5 py-3 bg-white text-black hover:bg-blue-500 hover:text-white rounded-full transition-all"
                     >
-                        RETURN TO TERMINAL
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        <span className="text-xs font-bold uppercase tracking-widest">Return to Terminal</span>
                     </button>
+                </header>
+
+                {/* Main Config Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                    {/* 1. Interface Mode (Navigation) */}
+                    <section className="space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                            </div>
+                            <h2 className="text-xl font-bold tracking-tight">Interface Mode</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            <button
+                                onClick={() => handleSave({ ...settings, navigationMode: 'sidebar' })}
+                                className={`group relative p-6 rounded-2xl border text-left transition-all ${settings.navigationMode === 'sidebar' ? 'bg-blue-600/5 border-blue-500' : 'bg-[#0a0a0f] border-white/5 hover:border-white/10'}`}
+                            >
+                                <div className="absolute top-4 right-4 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                </div>
+                                <h3 className={`text-lg font-bold mb-1 ${settings.navigationMode === 'sidebar' ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>Standard Menu</h3>
+                                <p className="text-sm text-gray-500 group-hover:text-gray-400">
+                                    Traditional sidebar navigation with quick access to pages and tools.
+                                </p>
+                            </button>
+
+                            <button
+                                onClick={() => handleSave({ ...settings, navigationMode: 'hidden' })}
+                                className={`group relative p-6 rounded-2xl border text-left transition-all ${settings.navigationMode === 'hidden' ? 'bg-purple-600/5 border-purple-500' : 'bg-[#0a0a0f] border-white/5 hover:border-white/10'}`}
+                            >
+                                <div className="absolute top-4 right-4 text-purple-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                </div>
+                                <h3 className={`text-lg font-bold mb-1 ${settings.navigationMode === 'hidden' ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>Focus Terminal</h3>
+                                <p className="text-sm text-gray-500 group-hover:text-gray-400">
+                                    Minimalist "Immersive" mode. Sidebar is hidden for maximum screen real estate.
+                                </p>
+                            </button>
+                        </div>
+                    </section>
+
+                    {/* 2. Workspace Layout */}
+                    <section className="space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>
+                            </div>
+                            <h2 className="text-xl font-bold tracking-tight">Workspace Layout</h2>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 h-full">
+                            <button
+                                onClick={() => handleSave({ ...settings, layoutMode: 'grid' })}
+                                className={`p-4 flex flex-col justify-center items-center text-center rounded-2xl border transition-all ${settings.layoutMode === 'grid' ? 'bg-orange-500/10 border-orange-500 text-orange-500' : 'bg-[#0a0a0f] border-white/5 text-gray-400 hover:border-white/10 hover:text-white'}`}
+                            >
+                                <svg className="w-8 h-8 mb-3 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                                <span className="text-xs font-bold uppercase tracking-widest">Grid Dashboard</span>
+                            </button>
+
+                            <button
+                                onClick={() => handleSave({ ...settings, layoutMode: 'list' })}
+                                className={`p-4 flex flex-col justify-center items-center text-center rounded-2xl border transition-all ${settings.layoutMode === 'list' ? 'bg-orange-500/10 border-orange-500 text-orange-500' : 'bg-[#0a0a0f] border-white/5 text-gray-400 hover:border-white/10 hover:text-white'}`}
+                            >
+                                <svg className="w-8 h-8 mb-3 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                <span className="text-xs font-bold uppercase tracking-widest">Vertical Feed</span>
+                            </button>
+
+                            <button
+                                onClick={() => handleSave({ ...settings, layoutMode: 'window' })}
+                                className={`p-4 flex flex-col justify-center items-center text-center rounded-2xl border transition-all ${settings.layoutMode === 'window' ? 'bg-orange-500/10 border-orange-500 text-orange-500' : 'bg-[#0a0a0f] border-white/5 text-gray-400 hover:border-white/10 hover:text-white'}`}
+                            >
+                                <svg className="w-8 h-8 mb-3 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" /></svg>
+                                <span className="text-xs font-bold uppercase tracking-widest">Floating Win</span>
+                            </button>
+                        </div>
+                    </section>
+
                 </div>
 
-                {/* Layout Selection */}
-                <section className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-6">
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                        <span className="w-2 h-2 bg-orange-500 rounded-full" />
-                        Workspace Layout
-                    </h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {['grid', 'list', 'window', 'page'].map((mode) => (
-                            <button
-                                key={mode}
-                                onClick={() => handleSave({ ...settings, layoutMode: mode as any })}
-                                className={`p-4 rounded-xl border transition-all text-center group ${settings.layoutMode === mode ? 'bg-orange-500/10 border-orange-500/50 text-orange-400' : 'bg-white/5 border-transparent hover:border-white/10 text-gray-400'}`}
-                            >
-                                <div className="text-sm font-bold uppercase tracking-wider mb-1">{mode}</div>
-                                <div className="text-[10px] opacity-60">
-                                    {mode === 'grid' && 'Structured Dashboard'}
-                                    {mode === 'list' && 'Vertical Feed'}
-                                    {mode === 'window' && 'Floating Windows'}
-                                    {mode === 'page' && 'Focused Views'}
-                                </div>
-                            </button>
-                        ))}
+                {/* 3. Module Visibility */}
+                <section className="bg-[#0a0a0f] border border-white/5 rounded-3xl p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                        </div>
+                        <h2 className="text-xl font-bold tracking-tight">Active Modules</h2>
                     </div>
-                </section>
 
-                {/* Visual Mode Selection */}
-                <section className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-6">
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full" />
-                        Visual Mode
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <button
-                            onClick={() => handleSave({ ...settings, theme: 'dark' })}
-                            className={`p-6 rounded-xl border transition-all text-left group ${settings.theme === 'dark' ? 'bg-blue-500/10 border-blue-500/50' : 'bg-white/5 border-transparent hover:border-white/10'}`}
-                        >
-                            <div className="text-lg font-bold mb-2 group-hover:text-blue-400">Cyber Dark</div>
-                            <p className="text-xs text-gray-500">High contrast, OLED optimized path tracing aesthetic.</p>
-                        </button>
-                        <button
-                            onClick={() => handleSave({ ...settings, theme: 'light' })}
-                            className={`p-6 rounded-xl border transition-all text-left group ${settings.theme === 'light' ? 'bg-blue-500/10 border-blue-500/50' : 'bg-white/5 border-transparent hover:border-white/10'}`}
-                        >
-                            <div className="text-lg font-bold mb-2 group-hover:text-blue-400">Corporate Light</div>
-                            <p className="text-xs text-gray-500">Clean, professional styling for bright environments.</p>
-                        </button>
-                    </div>
-                </section>
-
-                {/* Widget Management */}
-                <section className="bg-[#0a0a0f] border border-white/5 rounded-2xl p-6">
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                        <span className="w-2 h-2 bg-purple-500 rounded-full" />
-                        Active Modules
-                    </h2>
-                    <p className="text-xs text-gray-500 mb-6">Enable or disable modules to appear in your Terminal Dock.</p>
-
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {Object.entries(settings.widgets).map(([id, config]) => (
-                            <div key={id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/5">
-                                <span className="font-mono text-sm capitalize">{id.replace(/-/g, ' ')}</span>
+                            <div key={id} className="flex items-center justify-between p-4 bg-black/40 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                                <div>
+                                    <div className="text-sm font-bold text-gray-200 capitalize">{id.replace(/-/g, ' ')}</div>
+                                    <div className="text-[10px] text-gray-600 font-mono mt-1">ID: {id.split('-')[0].toUpperCase()}</div>
+                                </div>
                                 <button
-                                    onClick={() => toggleWidgetEnabled(id)}
-                                    className={`w-12 h-6 rounded-full p-1 transition-colors ${config.visible ? 'bg-green-500/20' : 'bg-gray-800'}`}
+                                    onClick={() => {
+                                        const newWidgets = { ...settings.widgets, [id]: { ...config, visible: !config.visible } };
+                                        handleSave({ ...settings, widgets: newWidgets });
+                                    }}
+                                    className={`w-12 h-6 rounded-full p-1 transition-colors ${config.visible ? 'bg-green-500' : 'bg-white/10'}`}
                                 >
-                                    <div className={`w-4 h-4 rounded-full bg-white transition-transform ${config.visible ? 'translate-x-6 bg-green-400' : 'translate-x-0 bg-gray-500'}`} />
+                                    <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${config.visible ? 'translate-x-6' : 'translate-x-0'}`} />
                                 </button>
                             </div>
                         ))}
                     </div>
                 </section>
-
-                <div className="text-center text-xs text-gray-600 font-mono py-8">
-                    CHANGES AUTO-SAVED TO CLOUD
-                </div>
 
             </div>
         </div>
