@@ -144,7 +144,7 @@ export default function TerminalPage() {
 
     // --- RENDERERS ---
 
-    const renderWidgetContent = (type: WidgetType, id: string) => {
+    const renderWidgetContent = (type: WidgetType, id: string, dragControls?: DragControls) => {
         let content = null;
         let title = '';
 
@@ -185,6 +185,7 @@ export default function TerminalPage() {
                 title={title}
                 className="h-full"
                 dragEnabled={false} // Handled by outer wrapper
+                dragControls={dragControls}
                 onFocus={() => setActiveWindow(id)}
                 onResize={(dx, dy) => handleResize(id, dx, dy)}
                 onResizeEnd={() => handleResizeEnd(id)}
