@@ -248,7 +248,6 @@ export default function TerminalPage() {
                         };
 
                         return (
-                        return (
                             <WidgetContainer
                                 key={widget.id}
                                 widgetId={widget.id}
