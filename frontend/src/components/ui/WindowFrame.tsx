@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 
 interface WindowFrameProps {
     title: string;
@@ -9,24 +9,37 @@ interface WindowFrameProps {
     onClose?: () => void;
     onMinimize?: () => void;
     onMaximize?: () => void;
+    onFocus?: () => void;
     isMaximized?: boolean;
     className?: string;
+    dragEnabled?: boolean;
 }
 
-export default function WindowFrame({ title, children, onClose, className = '' }: WindowFrameProps) {
+export default function WindowFrame({ title, children, onClose, onFocus, className = '', dragEnabled = false }: WindowFrameProps) {
     const [isMinimized, setIsMinimized] = useState(false);
     const [isMaximized, setIsMaximized] = useState(false);
+    const dragControls = useDragControls();
 
     return (
         <motion.div
             layout
+            drag={dragEnabled && !isMaximized}
+            dragControls={dragControls}
+            dragListener={false}
+            dragMomentum={false}
+            onPointerDown={onFocus}
             className={`flex flex-col bg-[#111115]/90 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl relative group ${isMaximized ? 'fixed inset-4 z-50' : 'h-full w-full'} ${className}`}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.2 }}
         >
             {/* Window Header / Drag Handle */}
-            <div className="h-9 bg-white/5 border-b border-white/5 flex items-center justify-between px-3 select-none cursor-grab active:cursor-grabbing">
+            <div
+                onPointerDown={(e) => {
+                    if (dragEnabled && !isMaximized) dragControls.start(e);
+                }}
+                className="h-9 bg-white/5 border-b border-white/5 flex items-center justify-between px-3 select-none cursor-grab active:cursor-grabbing touch-none"
+            >
                 <div className="flex items-center gap-2">
                     {/* Traffic Lights */}
                     <div className="flex gap-1.5 group-hover:opacity-100 opacity-50 transition-opacity">
