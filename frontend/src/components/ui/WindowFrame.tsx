@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls, DragControls } from 'framer-motion';
 
 interface WindowFrameProps {
     title: string;
@@ -15,6 +15,7 @@ interface WindowFrameProps {
     isMaximized?: boolean;
     className?: string;
     dragEnabled?: boolean;
+    dragControls?: DragControls;
 }
 
 export default function WindowFrame({
@@ -25,11 +26,15 @@ export default function WindowFrame({
     onResize,
     onResizeEnd,
     className = '',
-    dragEnabled = false
+    dragEnabled = false,
+    dragControls
 }: WindowFrameProps) {
     const [isMinimized, setIsMinimized] = useState(false);
     const [isMaximized, setIsMaximized] = useState(false);
-    const dragControls = useDragControls();
+
+    // Internal controls if none provided (legacy support)
+    const internalDragControls = useDragControls();
+    const activeControls = dragControls || internalDragControls;
     const resizeControls = useDragControls();
 
     return (
@@ -48,9 +53,9 @@ export default function WindowFrame({
             {/* Window Header / Drag Handle */}
             <div
                 onPointerDown={(e) => {
-                    if (dragEnabled && !isMaximized) activeDragControls.start(e);
-                    // Also support if ONLY dragControls provided but dragEnabled=false on this frame (outer drag mode)
-                    else if (providedDragControls && !isMaximized) activeDragControls.start(e);
+                    if ((dragEnabled || dragControls) && !isMaximized) {
+                        activeControls.start(e);
+                    }
                 }}
                 className="window-header h-9 bg-white/5 border-b border-white/5 flex items-center justify-between px-3 select-none cursor-grab active:cursor-grabbing touch-none"
             >
