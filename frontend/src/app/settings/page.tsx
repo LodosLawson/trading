@@ -59,7 +59,14 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-black tracking-tighter">SETTINGS</h1>
-                        <p className="text-gray-500 text-sm font-mono mt-1">SYSTEM CONFIGURATION</p>
+                        <div className="flex items-center gap-2 mt-1">
+                            <p className="text-gray-500 text-sm font-mono">SYSTEM CONFIGURATION</p>
+                            {user ? (
+                                <span className="text-[10px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded border border-green-500/20">CLOUD SYNC ACTIVE</span>
+                            ) : (
+                                <span className="text-[10px] bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded border border-yellow-500/20">LOCAL STORAGE (GUEST)</span>
+                            )}
+                        </div>
                     </div>
                     <button
                         onClick={() => router.push('/terminal')}

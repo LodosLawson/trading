@@ -28,7 +28,16 @@ export const DEFAULT_SETTINGS: UserSettings = {
     }
 };
 
-export async function saveUserSettings(userId: string, settings: UserSettings) {
+export async function saveUserSettings(userId: string | undefined, settings: UserSettings) {
+    // Guest / Local Mode
+    if (!userId || userId === 'guest') {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('market_pulse_settings', JSON.stringify(settings));
+        }
+        return;
+    }
+
+    // Cloud Mode (Firestore)
     if (!db) return;
     try {
         const ref = doc(db, 'users', userId, 'settings', 'layout');
@@ -38,14 +47,30 @@ export async function saveUserSettings(userId: string, settings: UserSettings) {
     }
 }
 
-export async function getUserSettings(userId: string): Promise<UserSettings> {
+export async function getUserSettings(userId: string | undefined): Promise<UserSettings> {
+    // 1. Try Local Storage first if Guest or fallback needed
+    if (!userId || userId === 'guest') {
+        if (typeof window !== 'undefined') {
+            const local = localStorage.getItem('market_pulse_settings');
+            if (local) {
+                try {
+                    return JSON.parse(local) as UserSettings;
+                } catch (e) {
+                    console.error("Error parsing local settings", e);
+                }
+            }
+        }
+        return DEFAULT_SETTINGS;
+    }
+
+    // 2. Try Firestore
     if (!db) return DEFAULT_SETTINGS;
     try {
         const ref = doc(db, 'users', userId, 'settings', 'layout');
         const snap = await getDoc(ref);
         if (snap.exists()) {
-            // Merge with default to ensure new widgets key exist if schema changes
             const data = snap.data() as UserSettings;
+            // Merge with default to ensure schema compatibility
             return {
                 ...DEFAULT_SETTINGS,
                 ...data,
