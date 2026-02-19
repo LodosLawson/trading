@@ -10,15 +10,27 @@ interface WindowFrameProps {
     onMinimize?: () => void;
     onMaximize?: () => void;
     onFocus?: () => void;
+    onResize?: (deltaW: number, deltaH: number) => void;
+    onResizeEnd?: () => void;
     isMaximized?: boolean;
     className?: string;
     dragEnabled?: boolean;
 }
 
-export default function WindowFrame({ title, children, onClose, onFocus, className = '', dragEnabled = false }: WindowFrameProps) {
+export default function WindowFrame({
+    title,
+    children,
+    onClose,
+    onFocus,
+    onResize,
+    onResizeEnd,
+    className = '',
+    dragEnabled = false
+}: WindowFrameProps) {
     const [isMinimized, setIsMinimized] = useState(false);
     const [isMaximized, setIsMaximized] = useState(false);
     const dragControls = useDragControls();
+    const resizeControls = useDragControls();
 
     return (
         <motion.div
@@ -38,7 +50,7 @@ export default function WindowFrame({ title, children, onClose, onFocus, classNa
                 onPointerDown={(e) => {
                     if (dragEnabled && !isMaximized) dragControls.start(e);
                 }}
-                className="h-9 bg-white/5 border-b border-white/5 flex items-center justify-between px-3 select-none cursor-grab active:cursor-grabbing touch-none"
+                className="window-header h-9 bg-white/5 border-b border-white/5 flex items-center justify-between px-3 select-none cursor-grab active:cursor-grabbing touch-none"
             >
                 <div className="flex items-center gap-2">
                     {/* Traffic Lights */}
@@ -72,6 +84,21 @@ export default function WindowFrame({ title, children, onClose, onFocus, classNa
 
                         {/* Overlay Gradient (Subtle) */}
                         <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-purple-500/5 pointer-events-none" />
+
+                        {/* Resize Handle */}
+                        {dragEnabled && !isMaximized && (
+                            <motion.div
+                                drag
+                                dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                                dragElastic={0}
+                                dragMomentum={false}
+                                onDrag={(_, info) => onResize && onResize(info.delta.x, info.delta.y)}
+                                onDragEnd={onResizeEnd}
+                                className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize z-50 flex items-center justify-center group/handle"
+                            >
+                                <div className="w-2 h-2 border-r-2 border-b-2 border-white/20 group-hover/handle:border-blue-500 transition-colors" />
+                            </motion.div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>

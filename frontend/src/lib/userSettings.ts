@@ -5,6 +5,13 @@ export interface WidgetConfig {
     id: string;
     visible: boolean;
     order?: number;
+    window?: {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        z: number;
+    };
 }
 
 export type LayoutMode = 'grid' | 'list' | 'window' | 'page';
