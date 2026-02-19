@@ -48,7 +48,9 @@ export default function WindowFrame({
             {/* Window Header / Drag Handle */}
             <div
                 onPointerDown={(e) => {
-                    if (dragEnabled && !isMaximized) dragControls.start(e);
+                    if (dragEnabled && !isMaximized) activeDragControls.start(e);
+                    // Also support if ONLY dragControls provided but dragEnabled=false on this frame (outer drag mode)
+                    else if (providedDragControls && !isMaximized) activeDragControls.start(e);
                 }}
                 className="window-header h-9 bg-white/5 border-b border-white/5 flex items-center justify-between px-3 select-none cursor-grab active:cursor-grabbing touch-none"
             >

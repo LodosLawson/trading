@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, DragControls } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthProvider';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getUserSettings, saveUserSettings, DEFAULT_SETTINGS, UserSettings } from '@/lib/userSettings';
 import WindowFrame from '@/components/ui/WindowFrame';
+import WidgetContainer from '@/components/dashboard/WidgetContainer';
 import LiveNewsWidget from '@/components/dashboard/LiveNewsWidget';
 import MarketWidget from '@/components/dashboard/MarketWidget';
 import NewsWidget from '@/components/dashboard/NewsWidget';
