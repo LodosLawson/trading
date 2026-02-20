@@ -41,7 +41,7 @@ export default function WindowFrame({
         <motion.div
             layout
             drag={dragEnabled && !isMaximized}
-            dragControls={dragControls}
+            dragControls={dragEnabled ? internalDragControls : undefined}
             dragListener={false}
             dragMomentum={false}
             onPointerDown={onFocus}
