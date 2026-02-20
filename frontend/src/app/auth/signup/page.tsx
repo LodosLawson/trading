@@ -16,7 +16,7 @@ export default function SignupPage() {
         e.preventDefault();
         try {
             await signUpWithEmail(form.email, form.password, form.nickname);
-            router.push('/dashboard');
+            router.push('/terminal');
         } catch (err: any) {
             setError('Failed to create account. ' + err.message);
         }
@@ -25,7 +25,7 @@ export default function SignupPage() {
     const handleGoogleSignup = async () => {
         try {
             await signInWithGoogle();
-            router.push('/dashboard'); // Redirect to dashboard
+            router.push('/terminal'); // Redirect to terminal
         } catch (err: any) {
             setError('Failed to sign up with Google. Please try again.');
             console.error(err);

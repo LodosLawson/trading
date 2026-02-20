@@ -27,14 +27,8 @@ interface Widget {
     rowSpan: number; // 1 to 12
 }
 
-const DEFAULT_LAYOUT: Widget[] = [
-    { id: 'chart-1', type: 'CHART', colSpan: 8, rowSpan: 5 },
-    { id: 'market-1', type: 'MARKET', colSpan: 4, rowSpan: 8 },
-    { id: 'trading-1', type: 'TRADING', colSpan: 8, rowSpan: 3 }, // Trading Panel below chart
-    { id: 'livenews-1', type: 'LIVENEWS', colSpan: 6, rowSpan: 5 }, // Replaced generic NEWS with LIVENEWS for demo
-    { id: 'chat-1', type: 'CHAT', colSpan: 6, rowSpan: 5 },
-    { id: 'browser-1', type: 'BROWSER', colSpan: 12, rowSpan: 6 }, // Browser at bottom
-];
+// New users start with an empty workspace
+const DEFAULT_LAYOUT: Widget[] = [];
 
 const AVAILABLE_WIDGETS: { type: WidgetType; label: string; defaultCol: number; defaultRow: number }[] = [
     { type: 'MARKET', label: 'Market Ticker', defaultCol: 3, defaultRow: 6 },
@@ -53,6 +47,7 @@ export default function TerminalPage() {
     const [layout, setLayout] = useState<Widget[]>(DEFAULT_LAYOUT);
     const [isEditing, setIsEditing] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [showAddWidget, setShowAddWidget] = useState(false);
 
     // Initialize & Load Layout
     useEffect(() => {
@@ -111,8 +106,8 @@ export default function TerminalPage() {
     };
 
     const resetLayout = () => {
-        if (confirm('Reset layout to default?')) {
-            setLayout(DEFAULT_LAYOUT);
+        if (confirm('Clear all widgets?')) {
+            setLayout([]);
         }
     };
 
@@ -240,13 +235,19 @@ export default function TerminalPage() {
 
                 <div className="flex items-center gap-3">
                     <button
+                        onClick={() => setShowAddWidget(true)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all border bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-blue-500/40 hover:bg-blue-600/10"
+                    >
+                        + WIDGET
+                    </button>
+                    <button
                         onClick={() => setIsEditing(!isEditing)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all border ${isEditing ? 'bg-blue-600 border-blue-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
                     >
                         {isEditing ? 'DONE EDITING' : 'CUSTOMIZE'}
                     </button>
                     {isEditing && (
-                        <button onClick={resetLayout} className="text-xs text-red-400 hover:text-red-300 px-2">Reset</button>
+                        <button onClick={resetLayout} className="text-xs text-red-400 hover:text-red-300 px-2">Clear All</button>
                     )}
                 </div>
             </header>
@@ -286,24 +287,116 @@ export default function TerminalPage() {
                     })}
                 </AnimatePresence>
 
-                {/* Add Widget Button (when editing) */}
-                {isEditing && (
-                    <div className="col-span-12 md:col-span-3 min-h-[200px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-600/5 transition-all group">
-                        <span className="text-xs text-gray-500 group-hover:text-blue-400 font-bold uppercase tracking-widest">Add Widget</span>
-                        <div className="flex flex-wrap justify-center gap-2 px-4">
-                            {AVAILABLE_WIDGETS.map(w => (
-                                <button
-                                    key={w.type}
-                                    onClick={() => addWidget(w.type)}
-                                    className="px-3 py-1.5 bg-white/5 hover:bg-blue-600 hover:text-white text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded border border-white/5 transition-colors"
-                                >
-                                    + {w.label}
-                                </button>
+                {/* EMPTY STATE ONBOARDING — Shown when no widgets exist */}
+                {layout.length === 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="col-span-12 flex flex-col items-center justify-center h-full min-h-[70vh] text-center gap-8"
+                    >
+                        {/* Hero Icon */}
+                        <div className="relative">
+                            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-600/20 to-violet-600/20 border border-blue-500/20 flex items-center justify-center">
+                                <svg className="w-12 h-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                </svg>
+                            </div>
+                            <div className="absolute -inset-4 bg-blue-500/10 rounded-full blur-xl pointer-events-none" />
+                        </div>
+
+                        <div className="space-y-3 max-w-md">
+                            <h2 className="text-3xl font-thin tracking-tight text-white">
+                                Your <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-500">workspace</span> is empty
+                            </h2>
+                            <p className="text-gray-400 text-base leading-relaxed">
+                                Add your first widget to get started. You can customize your layout anytime from the toolbar above.
+                            </p>
+                        </div>
+
+                        {/* Feature Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl w-full">
+                            {[
+                                { icon: '📊', label: 'Widgets', desc: 'Add charts, news feeds, market data, AI chat, and more' },
+                                { icon: '⚙️', label: 'Settings', desc: 'Change layout mode, theme, and global preferences' },
+                                { icon: '🪟', label: 'Window Mode', desc: 'Freely drag and resize panels like a real OS' },
+                            ].map(item => (
+                                <div key={item.label} className="bg-white/3 border border-white/5 rounded-2xl p-4 text-left hover:border-white/10 hover:bg-white/5 transition-all">
+                                    <div className="text-2xl mb-2">{item.icon}</div>
+                                    <div className="text-sm font-bold text-white mb-1">{item.label}</div>
+                                    <div className="text-xs text-gray-500 leading-relaxed">{item.desc}</div>
+                                </div>
                             ))}
                         </div>
+
+                        {/* CTA */}
+                        <button
+                            onClick={() => setShowAddWidget(true)}
+                            className="group relative px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm tracking-widest uppercase rounded-full transition-all shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_40px_rgba(59,130,246,0.5)]"
+                        >
+                            + Add Your First Widget
+                        </button>
+                    </motion.div>
+                )}
+
+                {/* Inline "Add Widget" tile shown in edit mode (non-empty) */}
+                {isEditing && layout.length > 0 && (
+                    <div className="col-span-12 md:col-span-3 min-h-[200px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-blue-500/50 hover:bg-blue-600/5 transition-all group cursor-pointer" onClick={() => setShowAddWidget(true)}>
+                        <span className="text-3xl text-white/20 group-hover:text-blue-400 transition-colors">+</span>
+                        <span className="text-xs text-gray-500 group-hover:text-blue-400 font-bold uppercase tracking-widest">Add Widget</span>
                     </div>
                 )}
             </motion.main>
+
+            {/* Floating Widget Picker Modal */}
+            <AnimatePresence>
+                {showAddWidget && (
+                    <motion.div
+                        key="widget-picker"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                        onClick={() => setShowAddWidget(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            onClick={e => e.stopPropagation()}
+                            className="bg-[#111115] border border-white/10 rounded-3xl p-8 w-full max-w-lg shadow-2xl"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-bold tracking-tight">Add Widget</h3>
+                                <button onClick={() => setShowAddWidget(false)} className="text-gray-500 hover:text-white transition-colors p-1">
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                {AVAILABLE_WIDGETS.map(w => (
+                                    <button
+                                        key={w.type}
+                                        onClick={() => { addWidget(w.type); setShowAddWidget(false); }}
+                                        className="group flex items-center gap-3 p-4 bg-white/3 hover:bg-blue-600/10 border border-white/5 hover:border-blue-500/30 rounded-xl text-left transition-all"
+                                    >
+                                        <span className="text-xl">{
+                                            w.type === 'MARKET' ? '📈' :
+                                                w.type === 'NEWS' ? '📰' :
+                                                    w.type === 'LIVENEWS' ? '⚡' :
+                                                        w.type === 'CHART' ? '📊' :
+                                                            w.type === 'CHAT' ? '🤖' :
+                                                                w.type === 'BROWSER' ? '🌐' : '💹'
+                                        }</span>
+                                        <div>
+                                            <div className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{w.label}</div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

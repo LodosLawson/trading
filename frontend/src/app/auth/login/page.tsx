@@ -16,7 +16,7 @@ export default function LoginPage() {
         e.preventDefault();
         try {
             await signInWithEmail(form.email, form.password);
-            router.push('/dashboard');
+            router.push('/terminal');
         } catch (err: any) {
             setError(err.message || 'Failed to sign in. Please check your credentials.');
         }
@@ -25,7 +25,7 @@ export default function LoginPage() {
     const handleGoogleLogin = async () => {
         try {
             await signInWithGoogle();
-            router.push('/dashboard'); // Redirect to dashboard after login
+            router.push('/terminal'); // Redirect to terminal after login
         } catch (err: any) {
             setError('Failed to sign in with Google. Please try again.');
             console.error(err);
