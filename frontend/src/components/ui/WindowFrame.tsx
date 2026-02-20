@@ -91,19 +91,22 @@ export default function WindowFrame({
 
                         {/* Overlay Gradient (Subtle) */}
                         <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-purple-500/5 pointer-events-none" />
-                        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-                        dragElastic={0}
-                        dragMomentum={false}
-                        onDrag={(_, info) => onResize && onResize(info.delta.x, info.delta.y)}
-                        onDragEnd={onResizeEnd}
-                        className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize z-50 flex items-center justify-center group/handle"
+                        {/* Resize Handle - Only if onResize is provided (Window Mode) */}
+                        {onResize && !isMaximized && (
+                            <motion.div
+                                drag
+                                dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                                dragElastic={0}
+                                dragMomentum={false}
+                                onDrag={(_, info) => onResize(info.delta.x, info.delta.y)}
+                                onDragEnd={onResizeEnd}
+                                className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize z-50 flex items-center justify-center group/handle"
                             >
-                        <div className="w-2 h-2 border-r-2 border-b-2 border-white/20 group-hover/handle:border-blue-500 transition-colors" />
+                                <div className="w-2 h-2 border-r-2 border-b-2 border-white/20 group-hover/handle:border-blue-500 transition-colors" />
+                            </motion.div>
+                        )}
                     </motion.div>
                 )}
-        </motion.div>
-    )
-}
             </AnimatePresence >
         </motion.div >
     );
