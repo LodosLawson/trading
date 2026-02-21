@@ -137,16 +137,12 @@ export default function TerminalPage() {
         saveUserSettings(user?.uid || 'guest', { ...settings, widgets: newWidgets });
     };
 
-    const handleResize = (id: string, dx: number, dy: number) => {
+    const handleWindowResizeEnd = (id: string, newW: number, newH: number) => {
         const current = settings.widgets[id]?.window || getDefaultWindowConfig(id);
-        const newWindow = { ...current, w: Math.max(300, current.w + dx), h: Math.max(200, current.h + dy) };
-        const newWidgets = { ...settings.widgets, [id]: { ...settings.widgets[id], window: newWindow } };
-        // Optimization: Debounce sending to server? For now setState is fine, visually instant.
-        setSettings({ ...settings, widgets: newWidgets });
-    };
-
-    const handleResizeEnd = async (id: string) => {
-        await saveUserSettings(user?.uid || 'guest', settings);
+        const newWin = { ...current, w: Math.round(newW), h: Math.round(newH) };
+        const newWidgets = { ...settings.widgets, [id]: { ...settings.widgets[id], window: newWin } };
+        setSettings(prev => ({ ...prev, widgets: newWidgets }));
+        saveUserSettings(user?.uid || 'guest', { ...settings, widgets: newWidgets });
     };
 
     const [activeWindow, setActiveWindow] = useState<string | null>(null);
@@ -193,11 +189,9 @@ export default function TerminalPage() {
             <WindowFrame
                 title={title}
                 className="h-full"
-                dragEnabled={false} // Handled by outer wrapper
                 dragControls={dragControls}
                 onFocus={() => setActiveWindow(id)}
-                onResize={(dx, dy) => handleResize(id, dx, dy)}
-                onResizeEnd={() => handleResizeEnd(id)}
+                onClose={() => removeWidget(id)}
             >
                 {content}
             </WindowFrame>
@@ -325,6 +319,7 @@ export default function TerminalPage() {
                                 updateWindowPosition={updateWindowPosition}
                                 onRemove={removeWidget}
                                 onResize={resizeWidget}
+                                onResizeEnd={handleWindowResizeEnd}
                             >
                                 {(dragControls) => renderWidgetContent(widget.type, widget.id, dragControls)}
                             </WidgetContainer>

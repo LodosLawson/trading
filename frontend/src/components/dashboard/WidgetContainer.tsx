@@ -1,7 +1,12 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import { motion, DragControls, useDragControls, useMotionValue } from 'framer-motion';
+import React, { useEffect, useRef, useCallback } from 'react';
+import {
+    motion,
+    DragControls,
+    useDragControls,
+    useMotionValue,
+} from 'framer-motion';
 
 interface WidgetContainerProps {
     widgetId: string;
@@ -13,9 +18,10 @@ interface WidgetContainerProps {
     index: number;
     activeWindow: string | null;
     setActiveWindow: (id: string) => void;
-    updateWindowPosition: (id: string, x: number, y: number) => void;
+    updateWindowPosition: (id: string, absX: number, absY: number) => void;
     onRemove: (id: string) => void;
     onResize: (id: string, dx: number, dy: number) => void;
+    onResizeEnd?: (id: string, w: number, h: number) => void;
     children: (dragControls: DragControls) => React.ReactNode;
 }
 
@@ -32,93 +38,118 @@ export default function WidgetContainer({
     updateWindowPosition,
     onRemove,
     onResize,
-    children
+    onResizeEnd,
+    children,
 }: WidgetContainerProps) {
     const dragControls = useDragControls();
-
-    const config = settings.widgets[widgetId] || { visible: true };
-    const winCfg = config.window || {
-        x: 80 + (index * 40),
-        y: 80 + (index * 40),
-        w: 520,
-        h: 420,
-        z: 10 + index
-    };
-
     const isWindow = settings.layoutMode === 'window';
 
-    // Stable motion values — these do NOT reset on re-render.
-    // They are the single source of truth for the window's position.
-    const x = useMotionValue(winCfg.x);
-    const y = useMotionValue(winCfg.y);
+    const config = settings.widgets[widgetId] || { visible: true };
+    const savedWin = config.window;
 
-    // Sync from external config changes (e.g., when config first loaded from Firebase)
-    // Only sync if the difference is significant (avoid fighting active drag)
-    const lastSavedX = useRef(winCfg.x);
-    const lastSavedY = useRef(winCfg.y);
-    const lastSavedW = useRef(winCfg.w);
-    const lastSavedH = useRef(winCfg.h);
+    // Initial values (used only at mount time)
+    const initX = savedWin?.x ?? 80 + index * 40;
+    const initY = savedWin?.y ?? 80 + index * 40;
+    const initW = savedWin?.w ?? 520;
+    const initH = savedWin?.h ?? 420;
 
+    // Stable motion values — owned by this component, never overwritten by state
+    const x = useMotionValue(initX);
+    const y = useMotionValue(initY);
+    const w = useMotionValue(initW);
+    const h = useMotionValue(initH);
+
+    // One-time sync when window config first loads from Firebase (only if significantly different)
+    const didSyncRef = useRef(false);
     useEffect(() => {
-        if (!isWindow) return;
-        // Only teleport if the config changed meaningfully from outside
-        const xDiff = Math.abs(winCfg.x - lastSavedX.current);
-        const yDiff = Math.abs(winCfg.y - lastSavedY.current);
-        if (xDiff > 2 || yDiff > 2) {
-            x.set(winCfg.x);
-            y.set(winCfg.y);
-            lastSavedX.current = winCfg.x;
-            lastSavedY.current = winCfg.y;
+        if (!isWindow || didSyncRef.current) return;
+        if (savedWin && (
+            Math.abs(savedWin.x - x.get()) > 10 ||
+            Math.abs(savedWin.y - y.get()) > 10
+        )) {
+            x.set(savedWin.x);
+            y.set(savedWin.y);
+            w.set(savedWin.w ?? initW);
+            h.set(savedWin.h ?? initH);
+            didSyncRef.current = true;
         }
-    }, [winCfg.x, winCfg.y, isWindow]);
+        if (savedWin) didSyncRef.current = true;
+    }, [isWindow, savedWin]);
+
+    // Resize via raw pointer events — no state updates while dragging
+    const resizeRef = useRef<HTMLDivElement>(null);
+    const isResizing = useRef(false);
+    const resizeStart = useRef({ px: 0, py: 0, w: 0, h: 0 });
+
+    const onResizePointerDown = useCallback((e: React.PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        isResizing.current = true;
+        resizeStart.current = { px: e.clientX, py: e.clientY, w: w.get(), h: h.get() };
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    }, [w, h]);
+
+    const onResizePointerMove = useCallback((e: React.PointerEvent) => {
+        if (!isResizing.current) return;
+        const newW = Math.max(280, resizeStart.current.w + (e.clientX - resizeStart.current.px));
+        const newH = Math.max(200, resizeStart.current.h + (e.clientY - resizeStart.current.py));
+        w.set(newW);
+        h.set(newH);
+    }, [w, h]);
+
+    const onResizePointerUp = useCallback((e: React.PointerEvent) => {
+        if (!isResizing.current) return;
+        isResizing.current = false;
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+        // Save final size
+        if (onResizeEnd) onResizeEnd(widgetId, w.get(), h.get());
+    }, [widgetId, w, h, onResizeEnd]);
 
     const isActive = activeWindow === widgetId;
-    const zIndex = isActive ? 100 : (winCfg.z || 1);
+    const zIndex = isActive ? 100 : (savedWin?.z ?? 10 + index);
 
     if (isWindow) {
         return (
             <motion.div
-                key={widgetId}
                 drag
                 dragListener={false}
                 dragControls={dragControls}
                 dragMomentum={false}
                 dragElastic={0}
                 onMouseDown={() => setActiveWindow(widgetId)}
+                onTouchStart={() => setActiveWindow(widgetId)}
                 onDragEnd={() => {
-                    // Save the ABSOLUTE position after drag ends
-                    const newX = x.get();
-                    const newY = y.get();
-                    lastSavedX.current = newX;
-                    lastSavedY.current = newY;
-                    updateWindowPosition(widgetId, newX, newY);
+                    updateWindowPosition(widgetId, x.get(), y.get());
                 }}
-                style={{
-                    x,
-                    y,
-                    width: winCfg.w,
-                    height: winCfg.h,
-                    position: 'absolute',
-                    zIndex,
-                }}
-                initial={{ opacity: 0, scale: 0.9 }}
+                style={{ x, y, width: w, height: h, position: 'absolute', zIndex }}
+                initial={{ opacity: 0, scale: 0.92 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.15 }}
-                className="group rounded-2xl border border-white/10 bg-[#111115] shadow-2xl overflow-hidden"
+                exit={{ opacity: 0, scale: 0.88 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="rounded-xl overflow-hidden shadow-2xl shadow-black/60 border border-white/10"
             >
-                <div className="h-full w-full">
-                    {children(dragControls)}
+                {/* Resize handle — pointer events only, no nested drag */}
+                <div
+                    ref={resizeRef}
+                    onPointerDown={onResizePointerDown}
+                    onPointerMove={onResizePointerMove}
+                    onPointerUp={onResizePointerUp}
+                    className="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-[999] flex items-end justify-end p-1 group"
+                >
+                    <svg width="8" height="8" viewBox="0 0 8 8" className="text-white/20 group-hover:text-blue-400 transition-colors">
+                        <path d="M7 1L1 7M7 4L4 7M7 7L7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
                 </div>
+
+                {children(dragControls)}
             </motion.div>
         );
     }
 
-    // Grid / List mode
+    // ── Grid / List mode ──
     return (
         <motion.div
             layout
-            key={widgetId}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
@@ -138,7 +169,6 @@ export default function WidgetContainer({
                 {children(dragControls)}
             </div>
 
-            {/* Edit Overlay for Grid/List */}
             {isEditing && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm border-2 border-dashed border-blue-500/50 rounded-2xl">
                     <button
