@@ -32,6 +32,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     ];
 
     const isPublicRoute = pathname === '/' || pathname?.startsWith('/auth');
+    // In window mode on terminal: full-screen immersive — hide bottom nav
+    const isWindowMode = pathname === '/terminal' && settings.layoutMode === 'window';
 
     if (isPublicRoute) {
         return <>{children}</>;
@@ -114,57 +116,67 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             )}
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
+            <main className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isWindowMode ? 'pb-0' : 'pb-16 md:pb-0'}`}>
                 {children}
             </main>
 
-            {/* Mobile Navigation (Bottom Bar) */}
-            <div className="fixed bottom-0 left-0 right-0 md:hidden bg-[#0a0a0f]/95 backdrop-blur-xl border-t border-white/5 z-40"
-                style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-            >
-                <nav className="flex justify-around py-2">
-                    {navItems.map((item) => {
-                        const isActive = pathname === item.path;
-                        return (
-                            <Link
-                                key={item.path}
-                                href={item.path}
-                                className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${isActive ? 'text-blue-400' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    {item.icon}
-                                </svg>
-                                <span className="text-[10px] font-medium">{item.name}</span>
-                            </Link>
-                        );
-                    })}
-                    {user ? (
-                        <button
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="flex flex-col items-center justify-center p-2 rounded-lg text-gray-400 hover:text-white"
-                        >
-                            {user.photoURL ? (
-                                <img src={user.photoURL} alt="User" className="w-5 h-5 rounded-full object-cover" />
+            {/* Mobile Navigation (Bottom Bar) — hidden in window mode */}
+            <AnimatePresence>
+                {!isWindowMode && (
+                    <motion.div
+                        key="mobile-nav"
+                        initial={{ y: 0 }}
+                        animate={{ y: 0 }}
+                        exit={{ y: 80, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: 'easeInOut' }}
+                        className="fixed bottom-0 left-0 right-0 md:hidden bg-[#0a0a0f]/95 backdrop-blur-xl border-t border-white/5 z-40"
+                        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+                    >
+                        <nav className="flex justify-around py-2">
+                            {navItems.map((item) => {
+                                const isActive = pathname === item.path;
+                                return (
+                                    <Link
+                                        key={item.path}
+                                        href={item.path}
+                                        className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${isActive ? 'text-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                            {item.icon}
+                                        </svg>
+                                        <span className="text-[10px] font-medium">{item.name}</span>
+                                    </Link>
+                                );
+                            })}
+                            {user ? (
+                                <button
+                                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                    className="flex flex-col items-center justify-center p-2 rounded-lg text-gray-400 hover:text-white"
+                                >
+                                    {user.photoURL ? (
+                                        <img src={user.photoURL} alt="User" className="w-5 h-5 rounded-full object-cover" />
+                                    ) : (
+                                        <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-blue-500 to-violet-500 flex items-center justify-center text-white text-[10px] font-bold">
+                                            {(user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                                        </div>
+                                    )}
+                                    <span className="text-[10px] font-medium">Me</span>
+                                </button>
                             ) : (
-                                <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-blue-500 to-violet-500 flex items-center justify-center text-white text-[10px] font-bold">
-                                    {(user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
-                                </div>
+                                <Link
+                                    href="/auth/login"
+                                    className="flex flex-col items-center justify-center p-2 rounded-lg text-gray-400 hover:text-white"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                    </svg>
+                                    <span className="text-[10px] font-medium">Sign In</span>
+                                </Link>
                             )}
-                            <span className="text-[10px] font-medium">Me</span>
-                        </button>
-                    ) : (
-                        <Link
-                            href="/auth/login"
-                            className="flex flex-col items-center justify-center p-2 rounded-lg text-gray-400 hover:text-white"
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                            </svg>
-                            <span className="text-[10px] font-medium">Sign In</span>
-                        </Link>
-                    )}
-                </nav>
-            </div>
+                        </nav>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Mobile User Menu Overlay */}
             <AnimatePresence>

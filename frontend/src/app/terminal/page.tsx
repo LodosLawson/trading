@@ -321,7 +321,16 @@ export default function TerminalPage() {
             {/* Widget Grid */}
             <motion.main
                 layout={settings.layoutMode !== 'window'}
-                className={`relative z-10 flex-1 p-4 md:p-6 ${settings.layoutMode === 'list' ? 'flex flex-col gap-6' : (settings.layoutMode === 'window' ? 'block' : 'grid grid-cols-1 lg:grid-cols-12 auto-rows-[60px] gap-6')} pb-6 overflow-y-auto custom-scrollbar content-start`}
+                className={`relative z-10 flex-1 p-4 overflow-y-auto custom-scrollbar content-start ${settings.layoutMode === 'list'
+                        ? 'flex flex-col gap-6 md:p-6'
+                        : settings.layoutMode === 'window'
+                            ? isMobile
+                                // Mobile window: scrollable card stack
+                                ? 'flex flex-col gap-3 pb-4'
+                                // Desktop window: absolute-positioned floating canvas
+                                : 'block md:p-6'
+                            : 'grid grid-cols-1 lg:grid-cols-12 auto-rows-[60px] gap-6 md:p-6 pb-6'
+                    }`}
             >
                 <AnimatePresence>
                     {layout.map((widget, index) => {

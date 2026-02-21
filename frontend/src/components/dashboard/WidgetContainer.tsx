@@ -108,6 +108,24 @@ export default function WidgetContainer({
     const isActive = activeWindow === widgetId;
     const zIndex = isActive ? 100 : (savedWin?.z ?? 10 + index);
 
+    // ── Mobile: window mode → full-width scrollable card (drag is unusable on touch) ──
+    if (isWindow && isMobile) {
+        return (
+            <motion.div
+                layout
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="w-full rounded-2xl border border-white/8 overflow-hidden shadow-lg bg-[#111115] mb-3"
+                style={{ minHeight: initH * 0.6 }}
+            >
+                {children(dragControls)}
+            </motion.div>
+        );
+    }
+
+    // ── Desktop: floating drag/resize window ──
     if (isWindow) {
         return (
             <motion.div
@@ -121,7 +139,7 @@ export default function WidgetContainer({
                 onDragEnd={() => {
                     updateWindowPosition(widgetId, x.get(), y.get());
                 }}
-                style={{ x, y, width: w, height: h, position: 'absolute', zIndex }}
+                style={{ x, y, width: w, height: h, position: 'absolute', zIndex, willChange: 'transform' }}
                 initial={{ opacity: 0, scale: 0.92 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.88 }}
@@ -134,7 +152,7 @@ export default function WidgetContainer({
                     onPointerDown={onResizePointerDown}
                     onPointerMove={onResizePointerMove}
                     onPointerUp={onResizePointerUp}
-                    className="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-[999] flex items-end justify-end p-1 group"
+                    className="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-[999] flex items-end justify-end p-1 group touch-none"
                 >
                     <svg width="8" height="8" viewBox="0 0 8 8" className="text-white/20 group-hover:text-blue-400 transition-colors">
                         <path d="M7 1L1 7M7 4L4 7M7 7L7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
