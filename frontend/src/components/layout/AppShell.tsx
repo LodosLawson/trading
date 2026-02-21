@@ -32,8 +32,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     ];
 
     const isPublicRoute = pathname === '/' || pathname?.startsWith('/auth');
-    // In window mode on terminal: full-screen immersive — hide bottom nav
-    const isWindowMode = pathname === '/terminal' && settings.layoutMode === 'window';
+    // In window/page (focus) mode on terminal: full-screen immersive — hide bottom nav
+    const isWindowMode = pathname === '/terminal' &&
+        (settings.layoutMode === 'window' || settings.layoutMode === 'page');
 
     if (isPublicRoute) {
         return <>{children}</>;
