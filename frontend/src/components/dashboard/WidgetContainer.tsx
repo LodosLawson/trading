@@ -173,14 +173,21 @@ export default function WidgetContainer({
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
             className={`
-                relative group rounded-2xl border shadow-lg bg-[#111115]
+                relative group rounded-2xl border shadow-lg bg-[#111115] overflow-hidden
                 ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'}
-                ${!isMobile ? '' : 'w-full min-h-[400px]'}
             `}
             style={
-                !isMobile && settings.layoutMode === 'grid'
-                    ? { gridColumn: `span ${colSpan}`, gridRow: `span ${rowSpan}` }
-                    : {}
+                isMobile
+                    ? {
+                        // Mobile 2-col grid: colSpan <= 3 → half; colSpan >= 6 → full
+                        gridColumn: colSpan >= 6 ? 'span 2' : 'span 1',
+                        minHeight: colSpan >= 6 ? '280px' : '220px',
+                    }
+                    : {
+                        // Desktop 12-col grid
+                        gridColumn: `span ${colSpan}`,
+                        gridRow: `span ${rowSpan}`,
+                    }
             }
         >
             <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>

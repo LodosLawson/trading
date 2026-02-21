@@ -327,15 +327,16 @@ export default function TerminalPage() {
             {/* Widget Grid */}
             <motion.main
                 layout={settings.layoutMode !== 'window'}
-                className={`relative z-10 flex-1 p-4 overflow-y-auto custom-scrollbar content-start ${settings.layoutMode === 'list'
-                    ? 'flex flex-col gap-6 md:p-6'
-                    : settings.layoutMode === 'window'
-                        ? isMobile
-                            // Mobile window: scrollable card stack
-                            ? 'flex flex-col gap-3 pb-4'
-                            // Desktop window: absolute-positioned floating canvas
-                            : 'block md:p-6'
-                        : 'grid grid-cols-1 lg:grid-cols-12 auto-rows-[60px] gap-6 md:p-6 pb-6'
+                className={`relative z-10 flex-1 overflow-y-auto custom-scrollbar ${settings.layoutMode === 'list'
+                        ? 'flex flex-col gap-4 p-4 md:p-6'
+                        : settings.layoutMode === 'window'
+                            ? isMobile
+                                ? 'flex flex-col gap-3 p-4 pb-4'
+                                : 'block p-4 md:p-6'
+                            // Grid mode: 2-col on mobile, 12-col on desktop
+                            : isMobile
+                                ? 'grid grid-cols-2 gap-3 p-3 auto-rows-[minmax(220px,auto)] items-start'
+                                : 'grid grid-cols-12 gap-5 p-5 auto-rows-[minmax(60px,auto)] items-start'
                     }`}
             >
                 <AnimatePresence>
