@@ -49,7 +49,7 @@ export default function TerminalPage() {
     const [isMobile, setIsMobile] = useState(false);
     const [showAddWidget, setShowAddWidget] = useState(false);
 
-    // Initialize & Load Layout
+    // Initialize & Load settings + saved layout
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 1024);
         checkMobile();
@@ -59,38 +59,57 @@ export default function TerminalPage() {
             const uid = user?.uid || 'guest';
             const s = await getUserSettings(uid);
             setSettings(s);
+            // Restore persisted layout (if any)
+            if (s.savedLayout && s.savedLayout.length > 0) {
+                setLayout(s.savedLayout as Widget[]);
+            }
         }
         loadSettings();
 
         return () => window.removeEventListener('resize', checkMobile);
     }, [user]);
 
-    // --- ACTIONS ---
-
+    // Helper: persist current layout into settings without overwriting other fields
+    const persistLayout = (newLayout: Widget[], currentSettings: UserSettings) => {
+        const updated = { ...currentSettings, savedLayout: newLayout };
+        setSettings(updated);
+        saveUserSettings(user?.uid || 'guest', updated);
+    };
     const removeWidget = (id: string) => {
-        setLayout(prev => prev.filter(w => w.id !== id));
+        setLayout(prev => {
+            const next = prev.filter(w => w.id !== id);
+            persistLayout(next, settings);
+            return next;
+        });
     };
 
     const addWidget = (type: WidgetType) => {
         const template = AVAILABLE_WIDGETS.find(w => w.type === type);
         if (!template) return;
-
         const newWidget: Widget = {
             id: `${type.toLowerCase()}-${Date.now()}`,
             type: type,
             colSpan: template.defaultCol,
             rowSpan: template.defaultRow
         };
-        setLayout(prev => [...prev, newWidget]);
+        setLayout(prev => {
+            const next = [...prev, newWidget];
+            persistLayout(next, settings);
+            return next;
+        });
     };
 
     const resizeWidget = (id: string, deltaCol: number, deltaRow: number) => {
-        setLayout(prev => prev.map(w => {
-            if (w.id !== id) return w;
-            const newCol = Math.max(3, Math.min(12, w.colSpan + deltaCol));
-            const newRow = Math.max(4, Math.min(12, w.rowSpan + deltaRow));
-            return { ...w, colSpan: newCol, rowSpan: newRow };
-        }));
+        setLayout(prev => {
+            const next = prev.map(w => {
+                if (w.id !== id) return w;
+                const newCol = Math.max(3, Math.min(12, w.colSpan + deltaCol));
+                const newRow = Math.max(4, Math.min(12, w.rowSpan + deltaRow));
+                return { ...w, colSpan: newCol, rowSpan: newRow };
+            });
+            persistLayout(next, settings);
+            return next;
+        });
     };
 
     const moveWidget = (index: number, direction: 'left' | 'right') => {

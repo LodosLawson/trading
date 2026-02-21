@@ -17,11 +17,19 @@ export interface WidgetConfig {
 export type LayoutMode = 'grid' | 'list' | 'window' | 'page';
 export type NavigationMode = 'sidebar' | 'hidden';
 
+export interface LayoutWidget {
+    id: string;
+    type: string;
+    colSpan: number;
+    rowSpan: number;
+}
+
 export interface UserSettings {
     theme: 'dark' | 'light';
     layoutMode: LayoutMode;
     navigationMode: NavigationMode;
     widgets: Record<string, WidgetConfig>;
+    savedLayout?: LayoutWidget[]; // persisted widget list
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
