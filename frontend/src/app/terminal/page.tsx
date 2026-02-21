@@ -213,42 +213,87 @@ export default function TerminalPage() {
                 <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]"></div>
             </div>
 
-            {/* Settings Button (Absolute Top Right) */}
-            <button
-                onClick={() => router.push('/settings')}
-                className="absolute top-4 right-4 z-50 p-2 text-gray-500 hover:text-white bg-black/50 backdrop-blur rounded-full border border-white/10 hover:border-white/30 transition-all"
-                title="System Configuration"
-            >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-            </button>
-
             {/* Header / Toolbar */}
-            <header className="relative z-20 shrink-0 h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#0a0a0f]/80 backdrop-blur-md">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-thin tracking-tight">
-                        TERMINAL <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-500">HUB</span>
+            <header className="relative z-20 shrink-0 h-14 border-b border-white/5 flex items-center justify-between px-5 bg-[#0a0a0f]/90 backdrop-blur-md">
+                {/* Left: Brand */}
+                <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                    </div>
+                    <h1 className="text-sm font-bold tracking-widest uppercase text-white/80">
+                        Terminal <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-500">Hub</span>
                     </h1>
                 </div>
 
-                <div className="flex items-center gap-3">
+                {/* Right: Actions */}
+                <div className="flex items-center gap-1.5">
+                    {/* + Widget */}
                     <button
                         onClick={() => setShowAddWidget(true)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all border bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-blue-500/40 hover:bg-blue-600/10"
+                        title="Add Widget"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all border bg-white/3 border-white/8 text-gray-400 hover:text-white hover:border-blue-500/40 hover:bg-blue-600/10"
                     >
-                        + WIDGET
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Widget</span>
                     </button>
+
+                    {/* Customize / Done */}
                     <button
                         onClick={() => setIsEditing(!isEditing)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all border ${isEditing ? 'bg-blue-600 border-blue-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
+                        title={isEditing ? 'Done Editing' : 'Customize Layout'}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all border ${isEditing
+                                ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.3)]'
+                                : 'bg-white/3 border-white/8 text-gray-400 hover:text-white hover:bg-white/5'
+                            }`}
                     >
-                        {isEditing ? 'DONE EDITING' : 'CUSTOMIZE'}
+                        {isEditing ? (
+                            <>
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span>Done</span>
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                                <span>Layout</span>
+                            </>
+                        )}
                     </button>
+
+                    {/* Clear All — only in edit mode */}
                     {isEditing && (
-                        <button onClick={resetLayout} className="text-xs text-red-400 hover:text-red-300 px-2">Clear All</button>
+                        <button
+                            onClick={resetLayout}
+                            title="Clear all widgets"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
                     )}
+
+                    {/* Divider */}
+                    <div className="w-px h-5 bg-white/10 mx-1" />
+
+                    {/* Settings */}
+                    <button
+                        onClick={() => router.push('/settings')}
+                        title="Settings"
+                        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
                 </div>
             </header>
 
