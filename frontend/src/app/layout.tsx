@@ -16,11 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#3b82f6",
+  themeColor: "#0a0a0f",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
@@ -58,10 +59,18 @@ export default function RootLayout({
           <AppShell>
             {children}
           </AppShell>
-          <Script
-            src="/sw.js"
-            strategy="afterInteractive"
-          />
+          {/* PWA Service Worker Registration */}
+          <Script id="sw-register" strategy="afterInteractive">
+            {`
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(reg => console.log('[PWA] SW registered:', reg.scope))
+                    .catch(err => console.warn('[PWA] SW failed:', err));
+                });
+              }
+            `}
+          </Script>
         </AuthProvider>
       </body>
     </html>

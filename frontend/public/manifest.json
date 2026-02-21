@@ -2,16 +2,39 @@
     "name": "MarketPulse by LockTrace",
     "short_name": "MarketPulse",
     "description": "AI-Native Financial Intelligence Platform — Powered by LockTrace",
-    "id": "/",
-    "start_url": "/",
+    "id": "/terminal",
+    "start_url": "/terminal",
+    "scope": "/",
     "display": "standalone",
-    "background_color": "#0a0a0f",
-    "theme_color": "#3b82f6",
-    "orientation": "portrait-primary",
+    "display_override": [
+        "window-controls-overlay",
+        "standalone"
+    ],
+    "background_color": "#050508",
+    "theme_color": "#0a0a0f",
+    "orientation": "any",
+    "lang": "en",
     "categories": [
         "finance",
         "productivity",
         "utilities"
+    ],
+    "shortcuts": [
+        {
+            "name": "Terminal",
+            "url": "/terminal",
+            "description": "Open Trading Terminal"
+        },
+        {
+            "name": "Prices",
+            "url": "/prices",
+            "description": "Market Prices"
+        },
+        {
+            "name": "News",
+            "url": "/news",
+            "description": "Financial News"
+        }
     ],
     "icons": [
         {

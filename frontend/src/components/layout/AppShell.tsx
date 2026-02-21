@@ -114,12 +114,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             )}
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col overflow-hidden">
+            <main className="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
                 {children}
             </main>
 
             {/* Mobile Navigation (Bottom Bar) */}
-            <div className="fixed bottom-0 left-0 right-0 md:hidden bg-[#0a0a0f]/80 backdrop-blur-xl border-t border-white/5 z-40">
+            <div className="fixed bottom-0 left-0 right-0 md:hidden bg-[#0a0a0f]/95 backdrop-blur-xl border-t border-white/5 z-40"
+                style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            >
                 <nav className="flex justify-around py-2">
                     {navItems.map((item) => {
                         const isActive = pathname === item.path;
