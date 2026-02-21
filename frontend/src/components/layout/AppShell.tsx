@@ -21,7 +21,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         if (uid) {
             getUserSettings(uid).then(setSettings);
         }
-    }, [user, pathname]); // Re-fetch on pathname change to catch updates if needed, though strictly settings update should trigger context. For now fetch on mount/nav.
+    }, [user, pathname]);
+
+    // Listen for real-time settings changes from TerminalPage (or any page)
+    React.useEffect(() => {
+        const handler = (e: Event) => {
+            const custom = e as CustomEvent<UserSettings>;
+            if (custom.detail) setSettings(custom.detail);
+        };
+        window.addEventListener('mp-settings-updated', handler);
+        return () => window.removeEventListener('mp-settings-updated', handler);
+    }, []);
 
     const navItems = [
         { name: 'Home', path: '/', icon: (/*...*/ <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /> /*...*/) },

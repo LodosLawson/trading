@@ -47,6 +47,11 @@ export const DEFAULT_SETTINGS: UserSettings = {
 };
 
 export async function saveUserSettings(userId: string | undefined, settings: UserSettings) {
+    // Broadcast to all listeners in the same tab (e.g. AppShell)
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('mp-settings-updated', { detail: settings }));
+    }
+
     // Guest / Local Mode
     if (!userId || userId === 'guest') {
         if (typeof window !== 'undefined') {
