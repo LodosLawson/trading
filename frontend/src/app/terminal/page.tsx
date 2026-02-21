@@ -132,7 +132,11 @@ export default function TerminalPage() {
     const updateWindowPosition = (id: string, absX: number, absY: number) => {
         const current = settings.widgets[id]?.window || getDefaultWindowConfig(id);
         const newWindow = { ...current, x: absX, y: absY };
-        const newWidgets = { ...settings.widgets, [id]: { ...settings.widgets[id], window: newWindow } };
+        // Always preserve visible:true so the widget doesn't get hidden on re-render
+        const newWidgets = {
+            ...settings.widgets,
+            [id]: { ...settings.widgets[id], window: newWindow, visible: settings.widgets[id]?.visible ?? true }
+        };
         setSettings(prev => ({ ...prev, widgets: newWidgets }));
         saveUserSettings(user?.uid || 'guest', { ...settings, widgets: newWidgets });
     };
@@ -140,7 +144,11 @@ export default function TerminalPage() {
     const handleWindowResizeEnd = (id: string, newW: number, newH: number) => {
         const current = settings.widgets[id]?.window || getDefaultWindowConfig(id);
         const newWin = { ...current, w: Math.round(newW), h: Math.round(newH) };
-        const newWidgets = { ...settings.widgets, [id]: { ...settings.widgets[id], window: newWin } };
+        // Always preserve visible:true so the widget doesn't get hidden on re-render
+        const newWidgets = {
+            ...settings.widgets,
+            [id]: { ...settings.widgets[id], window: newWin, visible: settings.widgets[id]?.visible ?? true }
+        };
         setSettings(prev => ({ ...prev, widgets: newWidgets }));
         saveUserSettings(user?.uid || 'guest', { ...settings, widgets: newWidgets });
     };
@@ -299,7 +307,8 @@ export default function TerminalPage() {
                 <AnimatePresence>
                     {layout.map((widget, index) => {
                         const config = settings.widgets[widget.id] || { visible: true };
-                        if (!config.visible) return null;
+                        // Only hide when explicitly set to false — undefined/missing = visible
+                        if (config.visible === false) return null;
 
                         // Window Mode Config
                         const winConfig = config.window || getDefaultWindowConfig(widget.id);
