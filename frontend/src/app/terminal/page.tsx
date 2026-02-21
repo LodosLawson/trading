@@ -129,11 +129,11 @@ export default function TerminalPage() {
         };
     };
 
-    const updateWindowPosition = (id: string, dx: number, dy: number) => {
+    const updateWindowPosition = (id: string, absX: number, absY: number) => {
         const current = settings.widgets[id]?.window || getDefaultWindowConfig(id);
-        const newWindow = { ...current, x: current.x + dx, y: current.y + dy };
+        const newWindow = { ...current, x: absX, y: absY };
         const newWidgets = { ...settings.widgets, [id]: { ...settings.widgets[id], window: newWindow } };
-        setSettings({ ...settings, widgets: newWidgets });
+        setSettings(prev => ({ ...prev, widgets: newWidgets }));
         saveUserSettings(user?.uid || 'guest', { ...settings, widgets: newWidgets });
     };
 
@@ -246,8 +246,8 @@ export default function TerminalPage() {
                         onClick={() => setIsEditing(!isEditing)}
                         title={isEditing ? 'Done Editing' : 'Customize Layout'}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all border ${isEditing
-                                ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.3)]'
-                                : 'bg-white/3 border-white/8 text-gray-400 hover:text-white hover:bg-white/5'
+                            ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.3)]'
+                            : 'bg-white/3 border-white/8 text-gray-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         {isEditing ? (

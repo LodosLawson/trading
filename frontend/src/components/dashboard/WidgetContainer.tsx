@@ -1,12 +1,11 @@
 'use client';
 
-import React from 'react';
-import { motion, DragControls, useDragControls, PanInfo } from 'framer-motion';
-import { WidgetConfig } from '@/lib/userSettings';
+import React, { useEffect, useRef } from 'react';
+import { motion, DragControls, useDragControls, useMotionValue } from 'framer-motion';
 
 interface WidgetContainerProps {
     widgetId: string;
-    settings: any; // UserSettings type
+    settings: any;
     isEditing: boolean;
     isMobile: boolean;
     colSpan: number;
@@ -14,7 +13,7 @@ interface WidgetContainerProps {
     index: number;
     activeWindow: string | null;
     setActiveWindow: (id: string) => void;
-    updateWindowPosition: (id: string, dx: number, dy: number) => void;
+    updateWindowPosition: (id: string, x: number, y: number) => void;
     onRemove: (id: string) => void;
     onResize: (id: string, dx: number, dy: number) => void;
     children: (dragControls: DragControls) => React.ReactNode;
@@ -38,69 +37,117 @@ export default function WidgetContainer({
     const dragControls = useDragControls();
 
     const config = settings.widgets[widgetId] || { visible: true };
-    const winConfig = config.window || {
-        x: 100 + (index * 40),
-        y: 100 + (index * 40),
-        w: 500,
-        h: 400,
+    const winCfg = config.window || {
+        x: 80 + (index * 40),
+        y: 80 + (index * 40),
+        w: 520,
+        h: 420,
         z: 10 + index
     };
 
+    const isWindow = settings.layoutMode === 'window';
+
+    // Stable motion values — these do NOT reset on re-render.
+    // They are the single source of truth for the window's position.
+    const x = useMotionValue(winCfg.x);
+    const y = useMotionValue(winCfg.y);
+
+    // Sync from external config changes (e.g., when config first loaded from Firebase)
+    // Only sync if the difference is significant (avoid fighting active drag)
+    const lastSavedX = useRef(winCfg.x);
+    const lastSavedY = useRef(winCfg.y);
+    const lastSavedW = useRef(winCfg.w);
+    const lastSavedH = useRef(winCfg.h);
+
+    useEffect(() => {
+        if (!isWindow) return;
+        // Only teleport if the config changed meaningfully from outside
+        const xDiff = Math.abs(winCfg.x - lastSavedX.current);
+        const yDiff = Math.abs(winCfg.y - lastSavedY.current);
+        if (xDiff > 2 || yDiff > 2) {
+            x.set(winCfg.x);
+            y.set(winCfg.y);
+            lastSavedX.current = winCfg.x;
+            lastSavedY.current = winCfg.y;
+        }
+    }, [winCfg.x, winCfg.y, isWindow]);
+
+    const isActive = activeWindow === widgetId;
+    const zIndex = isActive ? 100 : (winCfg.z || 1);
+
+    if (isWindow) {
+        return (
+            <motion.div
+                key={widgetId}
+                drag
+                dragListener={false}
+                dragControls={dragControls}
+                dragMomentum={false}
+                dragElastic={0}
+                onMouseDown={() => setActiveWindow(widgetId)}
+                onDragEnd={() => {
+                    // Save the ABSOLUTE position after drag ends
+                    const newX = x.get();
+                    const newY = y.get();
+                    lastSavedX.current = newX;
+                    lastSavedY.current = newY;
+                    updateWindowPosition(widgetId, newX, newY);
+                }}
+                style={{
+                    x,
+                    y,
+                    width: winCfg.w,
+                    height: winCfg.h,
+                    position: 'absolute',
+                    zIndex,
+                }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.15 }}
+                className="group rounded-2xl border border-white/10 bg-[#111115] shadow-2xl overflow-hidden"
+            >
+                <div className="h-full w-full">
+                    {children(dragControls)}
+                </div>
+            </motion.div>
+        );
+    }
+
+    // Grid / List mode
     return (
         <motion.div
-            layout={settings.layoutMode !== 'window'}
+            layout
             key={widgetId}
-            onMouseDown={() => setActiveWindow(widgetId)}
-
-            // Drag Configuration
-            drag={settings.layoutMode === 'window'}
-            dragListener={false} // Enable drag only via controls
-            dragControls={dragControls}
-            dragMomentum={false}
-            dragElastic={0} // Prevent rubber banding
-            onDragEnd={(_, info: PanInfo) => {
-                if (settings.layoutMode !== 'window') return;
-                updateWindowPosition(widgetId, info.offset.x, info.offset.y);
-            }}
-
-            initial={false}
-            animate={{
-                opacity: 1,
-                scale: 1,
-                zIndex: activeWindow === widgetId ? 100 : (winConfig.z || 1), // Higher Z for active
-            }}
-            style={{
-                x: settings.layoutMode === 'window' ? winConfig.x : 0,
-                y: settings.layoutMode === 'window' ? winConfig.y : 0,
-                width: settings.layoutMode === 'window' ? winConfig.w : 'auto',
-                height: settings.layoutMode === 'window' ? winConfig.h : 'auto',
-                position: settings.layoutMode === 'window' ? 'absolute' : 'relative',
-                gridColumn: !isMobile && settings.layoutMode === 'grid' ? `span ${colSpan}` : undefined,
-                gridRow: !isMobile && settings.layoutMode === 'grid' ? `span ${rowSpan}` : undefined,
-            }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
-
             className={`
-                relative group rounded-2xl transition-shadow shadow-lg
+                relative group rounded-2xl border shadow-lg bg-[#111115]
                 ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'}
-                ${settings.layoutMode === 'window' ? 'border bg-[#121218]' : ''}
-                ${!isMobile && settings.layoutMode === 'grid' ? '' : 'w-full min-h-[400px]'}
+                ${!isMobile ? '' : 'w-full min-h-[400px]'}
             `}
+            style={
+                !isMobile && settings.layoutMode === 'grid'
+                    ? { gridColumn: `span ${colSpan}`, gridRow: `span ${rowSpan}` }
+                    : {}
+            }
         >
-            {/* Render Widget Content with DragControls */}
             <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
                 {children(dragControls)}
             </div>
 
-            {/* Edit Overlay (Only for Grid/List mode editing) */}
-            {isEditing && settings.layoutMode !== 'window' && (
+            {/* Edit Overlay for Grid/List */}
+            {isEditing && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm border-2 border-dashed border-blue-500/50 rounded-2xl">
                     <button
                         onClick={() => onRemove(widgetId)}
                         className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
                     >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
 
                     <div className="flex items-center gap-4 bg-black/60 px-4 py-2 rounded-full border border-white/10">
@@ -112,7 +159,6 @@ export default function WidgetContainer({
                                 <button onClick={() => onResize(widgetId, 1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
                             </div>
                         </div>
-
                         <div className="flex flex-col items-center gap-1 border-l border-white/10 pl-4">
                             <span className="text-[9px] text-gray-400 uppercase">Height</span>
                             <div className="flex gap-1">
