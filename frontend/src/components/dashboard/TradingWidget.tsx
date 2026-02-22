@@ -253,7 +253,7 @@ function TradingWidgetInner({ activeSymbol = 'BINANCE:BTCUSDT', onSymbolChange, 
                         {tab === 'wallet' && (
                             <WalletTracker
                                 wallets={wallets}
-                                onAdd={w => addWallet(userId, w)}
+                                onAdd={async w => { await addWallet(userId, w); }}
                                 onRemove={id => removeWallet(userId, id)}
                             />
                         )}
