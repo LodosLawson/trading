@@ -36,10 +36,22 @@ interface TradingWidgetProps {
     activeSymbol?: string;
     onSymbolChange?: (sym: string) => void;
     userId: string;
+    authLoading?: boolean;
 }
 
 // ─── Outer Guard: no hooks here, just a prop check ───────────────────────────
 export default function TradingWidget(props: TradingWidgetProps) {
+    if (props.authLoading) {
+        return (
+            <div className="flex items-center justify-center h-full gap-3 p-6 text-center">
+                <motion.div
+                    className="w-8 h-8 rounded-full border-2 border-emerald-500/30 border-t-emerald-500"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                />
+            </div>
+        );
+    }
     // userId '' = not logged in (terminal page passes user?.uid || '')
     if (!props.userId) {
         return (

@@ -53,7 +53,7 @@ const WIDGET_WINDOW_SIZES: Record<string, { w: number; h: number }> = {
 };
 
 export default function TerminalPage() {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
     const [layout, setLayout] = useState<Widget[]>(DEFAULT_LAYOUT);
@@ -259,7 +259,7 @@ export default function TerminalPage() {
                 title = 'QUANTUM BROWSER';
                 break;
             case 'TRADING':
-                content = <TradingWidget activeSymbol={activeSymbol} onSymbolChange={setActiveSymbol} userId={user?.uid || ''} />;
+                content = <TradingWidget activeSymbol={activeSymbol} onSymbolChange={setActiveSymbol} userId={user?.uid || ''} authLoading={authLoading} />;
                 title = 'EXECUTION DECK';
                 break;
             default: return null;
