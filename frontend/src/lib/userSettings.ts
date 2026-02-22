@@ -5,6 +5,10 @@ export interface WidgetConfig {
     id: string;
     visible: boolean;
     order?: number;
+    // Per-widget appearance
+    theme?: 'dark' | 'glass' | 'minimal' | 'neon';
+    accent?: string;       // e.g. '#3b82f6'
+    customTitle?: string;  // overrides default widget title
     window?: {
         x: number;
         y: number;

@@ -42,9 +42,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     ];
 
     const isPublicRoute = pathname === '/' || pathname?.startsWith('/auth');
-    // In window/page (focus) mode on terminal: full-screen immersive — hide bottom nav
-    const isWindowMode = pathname === '/terminal' &&
-        (settings.layoutMode === 'window' || settings.layoutMode === 'page');
+    // Terminal is always an immersive workspace — always hide mobile bottom nav
+    const isTerminalPage = pathname === '/terminal';
 
     if (isPublicRoute) {
         return <>{children}</>;
@@ -127,13 +126,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             )}
 
             {/* Main Content Area */}
-            <main className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isWindowMode ? 'pb-0' : 'pb-16 md:pb-0'}`}>
+            <main className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isTerminalPage ? 'pb-0' : 'pb-16 md:pb-0'}`}>
                 {children}
             </main>
 
-            {/* Mobile Navigation (Bottom Bar) — hidden in window mode */}
+            {/* Mobile Navigation — hidden on terminal page (immersive workspace) */}
             <AnimatePresence>
-                {!isWindowMode && (
+                {!isTerminalPage && (
                     <motion.div
                         key="mobile-nav"
                         initial={{ y: 0 }}

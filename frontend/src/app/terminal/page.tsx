@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthProvider';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getUserSettings, saveUserSettings, DEFAULT_SETTINGS, UserSettings } from '@/lib/userSettings';
+import { getUserSettings, saveUserSettings, DEFAULT_SETTINGS, UserSettings, WidgetConfig } from '@/lib/userSettings';
 import WindowFrame from '@/components/ui/WindowFrame';
 import WidgetContainer from '@/components/dashboard/WidgetContainer';
 import LiveNewsWidget from '@/components/dashboard/LiveNewsWidget';
@@ -174,6 +174,45 @@ export default function TerminalPage() {
 
     const [activeWindow, setActiveWindow] = useState<string | null>(null);
 
+    // Widget type → display title map
+    const WIDGET_TITLES: Record<string, string> = {
+        MARKET: 'Market Ticker', NEWS: 'Intelligence Feed', LIVENEWS: 'Live Wire',
+        CHART: 'Chart View', CHAT: 'AI Analyst', BROWSER: 'Quantum Browser', TRADING: 'Execution Deck',
+    };
+
+    // Widget settings change: theme, accent, title, size
+    const handleWidgetSettingsChange = (id: string, patch: Partial<{ theme: string; accent: string; customTitle: string; colSpan: number; rowSpan: number }>) => {
+        // Update layout if size changed
+        if (patch.colSpan !== undefined || patch.rowSpan !== undefined) {
+            setLayout(prev => {
+                const next = prev.map(w => {
+                    if (w.id !== id) return w;
+                    return {
+                        ...w,
+                        colSpan: patch.colSpan ?? w.colSpan,
+                        rowSpan: patch.rowSpan ?? w.rowSpan,
+                    };
+                });
+                persistLayout(next, settings);
+                return next;
+            });
+        }
+        // Merge appearance fields into widget config
+        const existing = settings.widgets[id] || { visible: true } as WidgetConfig;
+        const merged: WidgetConfig = {
+            ...existing,
+            visible: existing.visible ?? true,
+            ...(patch.theme !== undefined && { theme: patch.theme as WidgetConfig['theme'] }),
+            ...(patch.accent !== undefined && { accent: patch.accent }),
+            ...(patch.customTitle !== undefined && { customTitle: patch.customTitle }),
+        };
+        const newWidgets = { ...settings.widgets, [id]: merged };
+        const updated = { ...settings, widgets: newWidgets };
+        setSettings(updated);
+        saveUserSettings(user?.uid || 'guest', updated);
+
+    };
+
     // --- RENDERERS ---
 
     const renderWidgetContent = (type: WidgetType, id: string, dragControls?: DragControls) => {
@@ -328,15 +367,15 @@ export default function TerminalPage() {
             <motion.main
                 layout={settings.layoutMode !== 'window'}
                 className={`relative z-10 flex-1 overflow-y-auto custom-scrollbar ${settings.layoutMode === 'list'
-                        ? 'flex flex-col gap-4 p-4 md:p-6'
-                        : settings.layoutMode === 'window'
-                            ? isMobile
-                                ? 'flex flex-col gap-3 p-4 pb-4'
-                                : 'block p-4 md:p-6'
-                            // Grid mode: 2-col on mobile, 12-col on desktop
-                            : isMobile
-                                ? 'grid grid-cols-2 gap-3 p-3 auto-rows-[minmax(220px,auto)] items-start'
-                                : 'grid grid-cols-12 gap-5 p-5 auto-rows-[minmax(60px,auto)] items-start'
+                    ? 'flex flex-col gap-4 p-4 md:p-6'
+                    : settings.layoutMode === 'window'
+                        ? isMobile
+                            ? 'flex flex-col gap-3 p-4 pb-4'
+                            : 'block p-4 md:p-6'
+                        // Grid mode: 2-col on mobile, 12-col on desktop
+                        : isMobile
+                            ? 'grid grid-cols-2 gap-3 p-3 auto-rows-[minmax(220px,auto)] items-start'
+                            : 'grid grid-cols-12 gap-5 p-5 auto-rows-[minmax(60px,auto)] items-start'
                     }`}
             >
                 <AnimatePresence>
@@ -352,6 +391,7 @@ export default function TerminalPage() {
                             <WidgetContainer
                                 key={widget.id}
                                 widgetId={widget.id}
+                                defaultTitle={WIDGET_TITLES[widget.type] ?? widget.type}
                                 settings={settings}
                                 isEditing={isEditing}
                                 isMobile={isMobile}
@@ -364,6 +404,7 @@ export default function TerminalPage() {
                                 onRemove={removeWidget}
                                 onResize={resizeWidget}
                                 onResizeEnd={handleWindowResizeEnd}
+                                onWidgetSettingsChange={handleWidgetSettingsChange}
                             >
                                 {(dragControls) => renderWidgetContent(widget.type, widget.id, dragControls)}
                             </WidgetContainer>

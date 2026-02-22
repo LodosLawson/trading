@@ -1,15 +1,26 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     motion,
+    AnimatePresence,
     DragControls,
     useDragControls,
     useMotionValue,
 } from 'framer-motion';
+import WidgetSettingsPopup, { WidgetSettings } from '@/components/ui/WidgetSettingsPopup';
+
+// Theme → CSS classes mapping
+const THEME_STYLES: Record<string, { wrapper: string; border: string }> = {
+    dark: { wrapper: 'bg-[#111115]', border: 'border-white/5' },
+    glass: { wrapper: 'bg-white/5 backdrop-blur-md', border: 'border-white/20' },
+    minimal: { wrapper: 'bg-transparent', border: 'border-transparent' },
+    neon: { wrapper: 'bg-[#080810]', border: 'border-blue-500/40' },
+};
 
 interface WidgetContainerProps {
     widgetId: string;
+    defaultTitle: string;
     settings: any;
     isEditing: boolean;
     isMobile: boolean;
@@ -22,11 +33,13 @@ interface WidgetContainerProps {
     onRemove: (id: string) => void;
     onResize: (id: string, dx: number, dy: number) => void;
     onResizeEnd?: (id: string, w: number, h: number) => void;
+    onWidgetSettingsChange: (id: string, patch: Partial<WidgetSettings>) => void;
     children: (dragControls: DragControls) => React.ReactNode;
 }
 
 export default function WidgetContainer({
     widgetId,
+    defaultTitle,
     settings,
     isEditing,
     isMobile,
@@ -39,6 +52,7 @@ export default function WidgetContainer({
     onRemove,
     onResize,
     onResizeEnd,
+    onWidgetSettingsChange,
     children,
 }: WidgetContainerProps) {
     const dragControls = useDragControls();
@@ -46,6 +60,14 @@ export default function WidgetContainer({
 
     const config = settings.widgets[widgetId] || { visible: true };
     const savedWin = config.window;
+
+    // Per-widget appearance
+    const widgetTheme = config.theme ?? 'dark';
+    const widgetAccent = config.accent ?? null;
+    const themeStyle = THEME_STYLES[widgetTheme] ?? THEME_STYLES.dark;
+
+    // Settings popup state
+    const [showSettings, setShowSettings] = useState(false);
 
     // Initial values (used only at mount time)
     const initX = savedWin?.x ?? 80 + index * 40;
@@ -59,7 +81,7 @@ export default function WidgetContainer({
     const w = useMotionValue(initW);
     const h = useMotionValue(initH);
 
-    // One-time sync when window config first loads from Firebase (only if significantly different)
+    // One-time sync when window config first loads from Firebase
     const didSyncRef = useRef(false);
     useEffect(() => {
         if (!isWindow || didSyncRef.current) return;
@@ -101,130 +123,180 @@ export default function WidgetContainer({
         if (!isResizing.current) return;
         isResizing.current = false;
         (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-        // Save final size
         if (onResizeEnd) onResizeEnd(widgetId, w.get(), h.get());
     }, [widgetId, w, h, onResizeEnd]);
 
+    // Gear button (shown on hover in non-edit mode, always in edit mode)
+    const GearButton = () => (
+        <button
+            onClick={(e) => { e.stopPropagation(); setShowSettings(true); }}
+            title="Widget Settings"
+            className="absolute top-2 left-2 z-50 p-1.5 rounded-lg bg-black/60 text-gray-400 hover:text-white hover:bg-black/80 opacity-0 group-hover:opacity-100 transition-all border border-white/5 hover:border-white/20"
+        >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        </button>
+    );
+
+    // ── Mobile window mode → full-width scrollable card ──
+    if (isWindow && isMobile) {
+        return (
+            <div className="relative">
+                <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                    className={`group w-full rounded-2xl border overflow-hidden shadow-lg mb-3 ${themeStyle.wrapper} ${themeStyle.border}`}
+                    style={{
+                        minHeight: colSpan >= 6 ? '300px' : '240px',
+                        ...(widgetAccent ? { borderColor: `${widgetAccent}30` } : {}),
+                    }}
+                >
+                    <GearButton />
+                    {children(dragControls)}
+                </motion.div>
+                <WidgetSettingsPopup
+                    isOpen={showSettings}
+                    onClose={() => setShowSettings(false)}
+                    defaultTitle={defaultTitle}
+                    current={{ theme: config.theme, accent: config.accent, customTitle: config.customTitle, colSpan, rowSpan }}
+                    onChange={(patch) => onWidgetSettingsChange(widgetId, patch)}
+                    isMobile={isMobile}
+                />
+            </div>
+        );
+    }
+
+    // ── Desktop window mode → floating drag/resize ──
+    if (isWindow) {
+        return (
+            <div className="relative">
+                <motion.div
+                    drag
+                    dragListener={false}
+                    dragControls={dragControls}
+                    dragMomentum={false}
+                    dragElastic={0}
+                    onMouseDown={() => setActiveWindow(widgetId)}
+                    onTouchStart={() => setActiveWindow(widgetId)}
+                    onDragEnd={() => {
+                        updateWindowPosition(widgetId, x.get(), y.get());
+                    }}
+                    style={{ x, y, width: w, height: h, position: 'absolute', zIndex: activeWindow === widgetId ? 100 : (savedWin?.z ?? 10 + index), willChange: 'transform', ...(widgetAccent ? { borderColor: `${widgetAccent}50` } : {}) }}
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.88 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                    className={`group rounded-xl overflow-hidden shadow-2xl shadow-black/60 border ${themeStyle.border} ${themeStyle.wrapper}`}
+                >
+                    <GearButton />
+                    {/* Resize handle */}
+                    <div
+                        ref={resizeRef}
+                        onPointerDown={onResizePointerDown}
+                        onPointerMove={onResizePointerMove}
+                        onPointerUp={onResizePointerUp}
+                        className="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-[999] flex items-end justify-end p-1 group touch-none"
+                    >
+                        <svg width="8" height="8" viewBox="0 0 8 8" className="text-white/20 group-hover:text-blue-400 transition-colors">
+                            <path d="M7 1L1 7M7 4L4 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                    </div>
+                    {children(dragControls)}
+                </motion.div>
+                <WidgetSettingsPopup
+                    isOpen={showSettings}
+                    onClose={() => setShowSettings(false)}
+                    defaultTitle={defaultTitle}
+                    current={{ theme: config.theme, accent: config.accent, customTitle: config.customTitle, colSpan, rowSpan }}
+                    onChange={(patch) => onWidgetSettingsChange(widgetId, patch)}
+                    isMobile={isMobile}
+                />
+            </div>
+        );
+    }
+
+    // ── Grid / List / Page mode ──
     const isActive = activeWindow === widgetId;
     const zIndex = isActive ? 100 : (savedWin?.z ?? 10 + index);
 
-    // ── Mobile: window mode → full-width scrollable card (drag is unusable on touch) ──
-    if (isWindow && isMobile) {
-        return (
+    return (
+        <div className="relative">
             <motion.div
                 layout
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-                className="w-full rounded-2xl border border-white/8 overflow-hidden shadow-lg bg-[#111115] mb-3"
-                style={{ minHeight: initH * 0.6 }}
-            >
-                {children(dragControls)}
-            </motion.div>
-        );
-    }
-
-    // ── Desktop: floating drag/resize window ──
-    if (isWindow) {
-        return (
-            <motion.div
-                drag
-                dragListener={false}
-                dragControls={dragControls}
-                dragMomentum={false}
-                dragElastic={0}
-                onMouseDown={() => setActiveWindow(widgetId)}
-                onTouchStart={() => setActiveWindow(widgetId)}
-                onDragEnd={() => {
-                    updateWindowPosition(widgetId, x.get(), y.get());
-                }}
-                style={{ x, y, width: w, height: h, position: 'absolute', zIndex, willChange: 'transform' }}
-                initial={{ opacity: 0, scale: 0.92 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.88 }}
-                transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="rounded-xl overflow-hidden shadow-2xl shadow-black/60 border border-white/10"
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+                className={`
+                    group relative rounded-2xl border shadow-lg overflow-hidden
+                    ${themeStyle.wrapper}
+                    ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : themeStyle.border}
+                `}
+                style={
+                    isMobile
+                        ? {
+                            gridColumn: colSpan >= 6 ? 'span 2' : 'span 1',
+                            minHeight: colSpan >= 6 ? '280px' : '220px',
+                            ...(widgetAccent ? { borderColor: `${widgetAccent}40` } : {}),
+                        }
+                        : {
+                            gridColumn: `span ${colSpan}`,
+                            gridRow: `span ${rowSpan}`,
+                            ...(widgetAccent ? { borderColor: `${widgetAccent}40` } : {}),
+                        }
+                }
             >
-                {/* Resize handle — pointer events only, no nested drag */}
-                <div
-                    ref={resizeRef}
-                    onPointerDown={onResizePointerDown}
-                    onPointerMove={onResizePointerMove}
-                    onPointerUp={onResizePointerUp}
-                    className="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-[999] flex items-end justify-end p-1 group touch-none"
-                >
-                    <svg width="8" height="8" viewBox="0 0 8 8" className="text-white/20 group-hover:text-blue-400 transition-colors">
-                        <path d="M7 1L1 7M7 4L4 7M7 7L7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
+                <GearButton />
+                <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
+                    {children(dragControls)}
                 </div>
 
-                {children(dragControls)}
-            </motion.div>
-        );
-    }
+                {isEditing && (
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm border-2 border-dashed border-blue-500/50 rounded-2xl">
+                        <button
+                            onClick={() => onRemove(widgetId)}
+                            className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
 
-    // ── Grid / List mode ──
-    return (
-        <motion.div
-            layout
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.2 }}
-            className={`
-                relative group rounded-2xl border shadow-lg bg-[#111115] overflow-hidden
-                ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-white/5'}
-            `}
-            style={
-                isMobile
-                    ? {
-                        // Mobile 2-col grid: colSpan <= 3 → half; colSpan >= 6 → full
-                        gridColumn: colSpan >= 6 ? 'span 2' : 'span 1',
-                        minHeight: colSpan >= 6 ? '280px' : '220px',
-                    }
-                    : {
-                        // Desktop 12-col grid
-                        gridColumn: `span ${colSpan}`,
-                        gridRow: `span ${rowSpan}`,
-                    }
-            }
-        >
-            <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
-                {children(dragControls)}
-            </div>
-
-            {isEditing && (
-                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm border-2 border-dashed border-blue-500/50 rounded-2xl">
-                    <button
-                        onClick={() => onRemove(widgetId)}
-                        className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-colors"
-                    >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-
-                    <div className="flex items-center gap-4 bg-black/60 px-4 py-2 rounded-full border border-white/10">
-                        <div className="flex flex-col items-center gap-1">
-                            <span className="text-[9px] text-gray-400 uppercase">Width</span>
-                            <div className="flex gap-1">
-                                <button onClick={() => onResize(widgetId, -1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
-                                <span className="font-mono text-xs w-4 text-center">{colSpan}</span>
-                                <button onClick={() => onResize(widgetId, 1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
+                        <div className="flex items-center gap-4 bg-black/60 px-4 py-2 rounded-full border border-white/10">
+                            <div className="flex flex-col items-center gap-1">
+                                <span className="text-[9px] text-gray-400 uppercase">Width</span>
+                                <div className="flex gap-1">
+                                    <button onClick={() => onResize(widgetId, -1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
+                                    <span className="font-mono text-xs w-4 text-center">{colSpan}</span>
+                                    <button onClick={() => onResize(widgetId, 1, 0)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
+                                </div>
                             </div>
-                        </div>
-                        <div className="flex flex-col items-center gap-1 border-l border-white/10 pl-4">
-                            <span className="text-[9px] text-gray-400 uppercase">Height</span>
-                            <div className="flex gap-1">
-                                <button onClick={() => onResize(widgetId, 0, -1)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
-                                <span className="font-mono text-xs w-4 text-center">{rowSpan}</span>
-                                <button onClick={() => onResize(widgetId, 0, 1)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
+                            <div className="flex flex-col items-center gap-1 border-l border-white/10 pl-4">
+                                <span className="text-[9px] text-gray-400 uppercase">Height</span>
+                                <div className="flex gap-1">
+                                    <button onClick={() => onResize(widgetId, 0, -1)} className="p-1 hover:text-blue-400 font-mono text-lg">-</button>
+                                    <span className="font-mono text-xs w-4 text-center">{rowSpan}</span>
+                                    <button onClick={() => onResize(widgetId, 0, 1)} className="p-1 hover:text-blue-400 font-mono text-lg">+</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </motion.div>
+                )}
+            </motion.div>
+            <WidgetSettingsPopup
+                isOpen={showSettings}
+                onClose={() => setShowSettings(false)}
+                defaultTitle={defaultTitle}
+                current={{ theme: config.theme, accent: config.accent, customTitle: config.customTitle, colSpan, rowSpan }}
+                onChange={(patch) => onWidgetSettingsChange(widgetId, patch)}
+                isMobile={isMobile}
+            />
+        </div>
     );
 }
