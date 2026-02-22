@@ -53,29 +53,36 @@ export default function PulseChart({ symbol }: PulseChartProps) {
 
         const fetchAll = async () => {
             try {
-                // Price history
-                const histRes = await fetch(`/api/history/${coinId}?days=${days}`);
+                // /api/chart returns { prices: [[timestamp, price], ...] }
+                const histRes = await fetch(`/api/chart?id=${coinId}&days=${days}&type=line`);
                 if (histRes.ok) {
-                    const data: number[] = await histRes.json();
-                    if (Array.isArray(data) && data.length > 0) {
-                        // Downsample to ~80 points
-                        const step = Math.max(1, Math.ceil(data.length / 80));
-                        setDataPoints(data.filter((_, i) => i % step === 0));
-                        setHigh(Math.max(...data));
-                        setLow(Math.min(...data));
-                        setCurrentPrice(data[data.length - 1]);
+                    const json = await histRes.json();
+                    // Extract just prices from [[ts, price], ...]
+                    const raw: number[] = Array.isArray(json?.prices)
+                        ? json.prices.map((p: [number, number]) => p[1])
+                        : [];
+                    if (raw.length > 0) {
+                        const step = Math.max(1, Math.ceil(raw.length / 80));
+                        const pts = raw.filter((_, i) => i % step === 0);
+                        setDataPoints(pts);
+                        setHigh(Math.max(...pts));
+                        setLow(Math.min(...pts));
+                        setCurrentPrice(pts[pts.length - 1]);
                     }
                 }
 
-                // 24h stats
-                const statsRes = await fetch(`/api/price/${coinId}`);
+                // /api/crypto returns array of coins; find matching by id
+                const statsRes = await fetch(`/api/crypto?per_page=100`);
                 if (statsRes.ok) {
-                    const stats = await statsRes.json();
-                    setPriceChange24h(stats?.price_change_percentage_24h ?? null);
-                    if (stats?.current_price) setCurrentPrice(stats.current_price);
-                    if (stats?.total_volume) {
-                        const v = stats.total_volume;
-                        setVolume(v >= 1e9 ? `$${(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${v.toLocaleString()}`);
+                    const coins: any[] = await statsRes.json();
+                    const coin = coins.find(c => c.id === coinId);
+                    if (coin) {
+                        setPriceChange24h(coin.price_change_percentage_24h ?? null);
+                        if (coin.current_price) setCurrentPrice(coin.current_price);
+                        if (coin.total_volume) {
+                            const v = coin.total_volume;
+                            setVolume(v >= 1e9 ? `$${(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${v.toLocaleString()}`);
+                        }
                     }
                 }
             } catch (e) {
