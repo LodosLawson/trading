@@ -385,10 +385,10 @@ export default function TerminalPage() {
                             ? isMobile
                                 ? 'flex flex-col gap-3 p-4 pb-4'
                                 : 'block p-4 md:p-6'
-                            // Grid: 2-col mobile / 12-col desktop with tuned row heights
+                            // Grid: dense auto-flow fills holes intelligently
                             : isMobile
-                                ? 'grid grid-cols-2 gap-3 p-3 auto-rows-[minmax(260px,auto)] items-start'
-                                : 'grid grid-cols-12 gap-5 p-5 auto-rows-[minmax(80px,auto)] items-start'
+                                ? 'grid grid-cols-2 gap-3 p-3 auto-rows-[minmax(260px,auto)] [grid-auto-flow:dense]'
+                                : 'grid grid-cols-12 gap-5 p-5 auto-rows-[minmax(80px,auto)] [grid-auto-flow:dense]'
                     }`}
             >
                 <AnimatePresence>
