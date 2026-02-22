@@ -19,7 +19,14 @@ export default function SimSetup({ onStart, loading }: SimSetupProps) {
         const futures = parseFloat(futuresAmount);
         if (isNaN(spot) || isNaN(futures) || spot + futures <= 0) return;
         setStarting(true);
-        try { await onStart(spot, futures); } finally { setStarting(false); }
+        try {
+            await onStart(spot, futures);
+        } catch (e: any) {
+            console.error(e);
+            alert("Simülasyon başlatılamadı: " + (e.message || "Bilinmeyen hata"));
+        } finally {
+            setStarting(false);
+        }
     };
 
     return (

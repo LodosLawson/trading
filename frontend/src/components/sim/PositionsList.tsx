@@ -9,11 +9,17 @@ interface PositionsListProps {
 }
 
 async function fetchPrice(symbol: string): Promise<number> {
-    const coinMap: Record<string, string> = {
-        'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana',
-        'XRP': 'ripple', 'DOGE': 'dogecoin', 'BNB': 'binancecoin',
-    };
     try {
+        const bRes = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}USDT`);
+        if (bRes.ok) {
+            const data = await bRes.json();
+            return parseFloat(data.price);
+        }
+
+        const coinMap: Record<string, string> = {
+            'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana',
+            'XRP': 'ripple', 'DOGE': 'dogecoin', 'BNB': 'binancecoin',
+        };
         const id = coinMap[symbol.toUpperCase()] || symbol.toLowerCase();
         const res = await fetch(`/api/crypto?per_page=100`);
         if (!res.ok) return 0;

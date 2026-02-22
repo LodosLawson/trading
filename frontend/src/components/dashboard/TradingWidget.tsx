@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../context/AuthProvider';
 import {
     Portfolio, SimPosition, SimTrade, WalletEntry,
     createPortfolio, listenPortfolio, updatePortfolio,
@@ -29,19 +28,33 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
     { id: 'wallet', label: 'Cüzdan', icon: '◫' },
 ];
 
-function formatPrice(n: number): string {
+function fmt(n: number) {
     return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 interface TradingWidgetProps {
     activeSymbol?: string;
     onSymbolChange?: (sym: string) => void;
+    userId: string;
 }
 
-export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymbolChange }: TradingWidgetProps) {
-    const { user, loading: authLoading } = useAuth();
-    const userId = user?.uid || 'guest';
+// ─── Outer Guard: no hooks here, just a prop check ───────────────────────────
+export default function TradingWidget(props: TradingWidgetProps) {
+    // userId '' = not logged in (terminal page passes user?.uid || '')
+    if (!props.userId) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
+                <div className="text-4xl">🔐</div>
+                <div className="text-sm font-bold text-white">Giriş Gerekli</div>
+                <div className="text-xs text-gray-500">Trading simülasyonunu kullanmak için hesabınıza giriş yapın.</div>
+            </div>
+        );
+    }
+    return <TradingWidgetInner {...props} />;
+}
 
+// ─── Inner Component: all hooks here, userId always a non-empty string ────────
+function TradingWidgetInner({ activeSymbol = 'BINANCE:BTCUSDT', onSymbolChange, userId }: TradingWidgetProps) {
     const [tab, setTab] = useState<Tab>('sim');
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
     const [positions, setPositions] = useState<SimPosition[]>([]);
@@ -52,19 +65,16 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
 
     // ── Firebase real-time listeners ──────────────────────────────────────────
     useEffect(() => {
-        if (!userId || userId === 'guest') { setLoading(false); return; }
-
         const unsubs = [
             listenPortfolio(userId, p => { setPortfolio(p); setLoading(false); }),
             listenPositions(userId, setPositions),
             listenTrades(userId, setTrades),
             listenWallets(userId, setWallets),
         ];
-
         return () => unsubs.forEach(u => u());
     }, [userId]);
 
-    // Daily snapshot — save once per day
+    // Daily snapshot — save once per day when portfolio loads
     useEffect(() => {
         if (!portfolio || snapshotDone.current) return;
         const today = new Date().toISOString().split('T')[0];
@@ -95,10 +105,7 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
 
     const handleClosePosition = async (pos: SimPosition, currentPrice: number) => {
         if (!portfolio) return;
-
-        const priceDiff = pos.side === 'LONG'
-            ? currentPrice - pos.entryPrice
-            : pos.entryPrice - currentPrice;
+        const priceDiff = pos.side === 'LONG' ? currentPrice - pos.entryPrice : pos.entryPrice - currentPrice;
         const pnl = priceDiff * pos.qty * pos.leverage;
         const returnedMargin = (pos.entryPrice * pos.qty) / pos.leverage;
         const totalReturn = returnedMargin + pnl;
@@ -108,58 +115,25 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
                 ? { spotBalance: portfolio.spotBalance + totalReturn }
                 : { futuresBalance: portfolio.futuresBalance + totalReturn };
 
-        const closeTrade: Omit<SimTrade, 'id'> = {
-            symbol: pos.symbol,
-            side: pos.side === 'LONG' ? 'SELL' : 'BUY',
-            qty: pos.qty,
-            price: currentPrice,
-            mode: pos.mode,
-            pnl,
-            closedAt: null,
-            openedAt: null,
-            positionId: pos.id,
-            leverage: pos.leverage,
-        };
-
         await Promise.all([
             closePosition(userId, pos.id!),
-            recordTrade(userId, closeTrade),
+            recordTrade(userId, {
+                symbol: pos.symbol,
+                side: pos.side === 'LONG' ? 'SELL' : 'BUY',
+                qty: pos.qty,
+                price: currentPrice,
+                mode: pos.mode,
+                pnl,
+                closedAt: null,
+                openedAt: null,
+                positionId: pos.id,
+                leverage: pos.leverage,
+            }),
             updatePortfolio(userId, portfolioPatch),
         ]);
     };
 
-    const handleAddWallet = async (wallet: Omit<WalletEntry, 'id'>) => {
-        await addWallet(userId, wallet);
-    };
-
-    const handleRemoveWallet = async (id: string) => {
-        await removeWallet(userId, id);
-    };
-
-    // ── Auth still resolving → show spinner, NOT the "Giriş Gerekli" screen ─────
-    if (authLoading) {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <motion.div
-                    className="w-8 h-8 rounded-full border-2 border-emerald-500/30 border-t-emerald-500"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                />
-            </div>
-        );
-    }
-
-    // ── Guest Warning (only after auth is confirmed null) ─────────────────────
-    if (!user) {
-        return (
-            <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
-                <div className="text-4xl">🔐</div>
-                <div className="text-sm font-bold text-white">Giriş Gerekli</div>
-                <div className="text-xs text-gray-500">Trading simülasyonunu kullanmak için hesabınıza giriş yapın. Verileriniz Firebase'de güvenle saklanır.</div>
-            </div>
-        );
-    }
-
+    // ── Loading state ─────────────────────────────────────────────────────────
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full">
@@ -172,13 +146,12 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
         );
     }
 
-    // ── Initial setup ─────────────────────────────────────────────────────────
+    // ── First time setup ──────────────────────────────────────────────────────
     if (!portfolio) {
         return <SimSetup onStart={handleStartSim} />;
     }
 
     // ── Main widget ───────────────────────────────────────────────────────────
-    const ticker = (activeSymbol.split(':')[1] || activeSymbol).replace('USDT', '');
     const totalBalance = portfolio.spotBalance + portfolio.futuresBalance;
     const totalPnl = totalBalance - portfolio.startBalance;
     const isPos = totalPnl >= 0;
@@ -186,19 +159,17 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
     return (
         <div className="w-full h-full flex flex-col bg-[#0a0a0f] overflow-hidden">
 
-            {/* ── Mini Header ── */}
+            {/* Mini header */}
             <div className="shrink-0 px-4 pt-3 pb-2 border-b border-white/5">
                 <div className="flex items-center justify-between">
                     <div>
                         <div className="text-[10px] text-gray-600 uppercase tracking-widest">Paper Trading</div>
-                        <div className="text-sm font-black text-white">${formatPrice(totalBalance)}</div>
+                        <div className="text-sm font-black text-white">${fmt(totalBalance)}</div>
                     </div>
                     <div className={`flex items-center gap-1 text-xs font-bold ${isPos ? 'text-emerald-400' : 'text-red-400'}`}>
                         {isPos ? '▲' : '▼'} ${Math.abs(totalPnl).toFixed(2)}
                     </div>
                 </div>
-
-                {/* Reset button */}
                 <div className="flex justify-end mt-1">
                     <button
                         onClick={async () => {
@@ -210,7 +181,7 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
                 </div>
             </div>
 
-            {/* ── Tab Bar ── */}
+            {/* Tab bar */}
             <div className="shrink-0 flex border-b border-white/5 overflow-x-auto scrollbar-none">
                 {TABS.map(t => (
                     <button
@@ -221,7 +192,7 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
                         <span className="text-xs">{t.icon}</span>
                         <span className="text-[8px] font-bold mt-0.5 leading-none">{t.label}</span>
                         {tab === t.id && (
-                            <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-2 right-2 h-0.5 bg-emerald-500 rounded-full" />
+                            <motion.div layoutId="trading-tab-ind" className="absolute bottom-0 left-2 right-2 h-0.5 bg-emerald-500 rounded-full" />
                         )}
                         {t.id === 'positions' && positions.length > 0 && (
                             <span className="absolute top-1.5 right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[7px] font-bold flex items-center justify-center">
@@ -232,8 +203,8 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
                 ))}
             </div>
 
-            {/* ── Tab Content ── */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {/* Tab content */}
+            <div className="flex-1 overflow-y-auto">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={tab}
@@ -241,25 +212,15 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -6 }}
                         transition={{ duration: 0.15 }}
-                        className="h-full"
                     >
                         {tab === 'sim' && (
                             <>
                                 <PortfolioOverview portfolio={portfolio} positions={positions} trades={trades} />
                                 <div className="border-t border-white/5" />
-                                <TradePanel
-                                    portfolio={portfolio}
-                                    activeSymbol={activeSymbol}
-                                    userId={userId}
-                                    onTrade={handleTrade}
-                                />
+                                <TradePanel portfolio={portfolio} activeSymbol={activeSymbol} userId={userId} onTrade={handleTrade} />
                             </>
                         )}
-
-                        {tab === 'positions' && (
-                            <PositionsList positions={positions} onClose={handleClosePosition} />
-                        )}
-
+                        {tab === 'positions' && <PositionsList positions={positions} onClose={handleClosePosition} />}
                         {tab === 'history' && (
                             <div className="flex flex-col gap-1.5 p-4">
                                 {trades.length === 0 ? (
@@ -267,9 +228,8 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
                                         <span className="text-3xl opacity-30">◷</span>
                                         <span className="text-xs">İşlem geçmişi burada görünür</span>
                                     </div>
-                                ) : trades.map(t => {
+                                ) : trades.map((t: SimTrade) => {
                                     const isB = t.side === 'BUY';
-                                    const pnlVal = t.pnl;
                                     return (
                                         <div key={t.id} className="flex items-center gap-3 rounded-xl bg-white/3 border border-white/6 px-3 py-2.5">
                                             <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isB ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
@@ -277,11 +237,11 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
                                             </span>
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-xs font-bold text-white">{t.symbol}</div>
-                                                <div className="text-[9px] text-gray-600 font-mono">{t.qty.toFixed(6)} @ ${t.price.toFixed(2)} · {t.mode}</div>
+                                                <div className="text-[9px] text-gray-600 font-mono">{t.qty?.toFixed(6)} @ ${t.price?.toFixed(2)} · {t.mode}</div>
                                             </div>
-                                            {pnlVal !== undefined && pnlVal !== null && (
-                                                <span className={`text-xs font-mono font-bold ${pnlVal >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                    {pnlVal >= 0 ? '+' : ''}${pnlVal.toFixed(2)}
+                                            {t.pnl != null && (
+                                                <span className={`text-xs font-mono font-bold ${t.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                    {t.pnl >= 0 ? '+' : ''}${t.pnl.toFixed(2)}
                                                 </span>
                                             )}
                                         </div>
@@ -289,13 +249,13 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
                                 })}
                             </div>
                         )}
-
-                        {tab === 'pnl' && (
-                            <PnlChart userId={userId} startBalance={portfolio.startBalance} />
-                        )}
-
+                        {tab === 'pnl' && <PnlChart userId={userId} startBalance={portfolio.startBalance} />}
                         {tab === 'wallet' && (
-                            <WalletTracker wallets={wallets} onAdd={handleAddWallet} onRemove={handleRemoveWallet} />
+                            <WalletTracker
+                                wallets={wallets}
+                                onAdd={w => addWallet(userId, w)}
+                                onRemove={id => removeWallet(userId, id)}
+                            />
                         )}
                     </motion.div>
                 </AnimatePresence>

@@ -14,12 +14,18 @@ interface TradePanelProps {
 
 async function fetchCurrentPrice(symbol: string): Promise<number> {
     try {
+        const raw = symbol.split(':')[1] || symbol;
+        const bRes = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${raw}`);
+        if (bRes.ok) {
+            const data = await bRes.json();
+            return parseFloat(data.price);
+        }
+
         const coinMap: Record<string, string> = {
             'BTCUSDT': 'bitcoin', 'ETHUSDT': 'ethereum', 'SOLUSDT': 'solana',
             'XRPUSDT': 'ripple', 'DOGEUSDT': 'dogecoin', 'BNBUSDT': 'binancecoin',
             'ADAUSDT': 'cardano', 'AVAXUSDT': 'avalanche-2',
         };
-        const raw = symbol.split(':')[1] || symbol;
         const coinId = coinMap[raw] || raw.replace('USDT', '').toLowerCase();
         const res = await fetch(`/api/crypto?per_page=100`);
         if (!res.ok) return 0;
@@ -237,8 +243,8 @@ export default function TradePanel({ portfolio, activeSymbol, onTrade }: TradePa
                 onClick={handleTrade}
                 disabled={submitting || !currentPrice || amountNum <= 0 || amountNum > available}
                 className={`w-full py-3 rounded-xl text-sm font-bold shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed ${side === 'BUY'
-                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/20 hover:from-emerald-500 hover:to-teal-500'
-                        : 'bg-gradient-to-r from-red-600 to-rose-600 shadow-red-500/20 hover:from-red-500 hover:to-rose-500'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/20 hover:from-emerald-500 hover:to-teal-500'
+                    : 'bg-gradient-to-r from-red-600 to-rose-600 shadow-red-500/20 hover:from-red-500 hover:to-rose-500'
                     } text-white`}
             >
                 {submitting ? 'İşleniyor…' : `${side === 'BUY' ? '▲ AL (LONG)' : '▼ SAT (SHORT)'} ${ticker}`}

@@ -259,7 +259,7 @@ export default function TerminalPage() {
                 title = 'QUANTUM BROWSER';
                 break;
             case 'TRADING':
-                content = <TradingWidget activeSymbol={activeSymbol} onSymbolChange={setActiveSymbol} />;
+                content = <TradingWidget activeSymbol={activeSymbol} onSymbolChange={setActiveSymbol} userId={user?.uid || ''} />;
                 title = 'EXECUTION DECK';
                 break;
             default: return null;
