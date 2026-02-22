@@ -89,10 +89,25 @@ function TradingWidgetInner({ activeSymbol = 'BINANCE:BTCUSDT', onSymbolChange, 
     // Daily snapshot — save once per day when portfolio loads
     useEffect(() => {
         if (!portfolio || snapshotDone.current) return;
+
         const today = new Date().toISOString().split('T')[0];
+        const lastSnapDate = localStorage.getItem(`latest_sim_snap_${userId}`);
+
+        // If we already saved for today, just skip.
+        if (lastSnapDate === today) {
+            snapshotDone.current = true;
+            return;
+        }
+
         const totalValue = portfolio.spotBalance + portfolio.futuresBalance;
         const pnl = totalValue - portfolio.startBalance;
-        saveSnapshot(userId, { date: today, spotBalance: portfolio.spotBalance, futuresBalance: portfolio.futuresBalance, totalValue, pnl });
+
+        saveSnapshot(userId, { date: today, spotBalance: portfolio.spotBalance, futuresBalance: portfolio.futuresBalance, totalValue, pnl })
+            .then(() => {
+                localStorage.setItem(`latest_sim_snap_${userId}`, today);
+            })
+            .catch(err => console.error("Failed to save snapshot:", err));
+
         snapshotDone.current = true;
     }, [portfolio, userId]);
 

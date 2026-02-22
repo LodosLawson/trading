@@ -97,7 +97,11 @@ export async function getPortfolio(userId: string): Promise<Portfolio | null> {
 }
 
 export function listenPortfolio(userId: string, cb: (p: Portfolio | null) => void): Unsubscribe {
-    return onSnapshot(simRef(userId), snap => cb(snap.exists() ? snap.data() as Portfolio : null));
+    return onSnapshot(
+        simRef(userId),
+        snap => cb(snap.exists() ? snap.data() as Portfolio : null),
+        err => console.error("Portfolio listener error:", err)
+    );
 }
 
 export async function updatePortfolio(userId: string, patch: Partial<Portfolio>) {
@@ -112,8 +116,10 @@ export async function openPosition(userId: string, pos: Omit<SimPosition, 'id'>)
 }
 
 export function listenPositions(userId: string, cb: (positions: SimPosition[]) => void): Unsubscribe {
-    return onSnapshot(col(userId, 'positions'), snap =>
-        cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as SimPosition)))
+    return onSnapshot(
+        col(userId, 'positions'),
+        snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as SimPosition))),
+        err => console.error("Positions listener error:", err)
     );
 }
 
@@ -130,8 +136,10 @@ export async function recordTrade(userId: string, trade: Omit<SimTrade, 'id'>): 
 
 export function listenTrades(userId: string, cb: (trades: SimTrade[]) => void): Unsubscribe {
     const q = query(col(userId, 'trades'), orderBy('openedAt', 'desc'));
-    return onSnapshot(q, snap =>
-        cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as SimTrade)))
+    return onSnapshot(
+        q,
+        snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as SimTrade))),
+        err => console.error("Trades listener error:", err)
     );
 }
 
@@ -147,8 +155,10 @@ export async function removeWallet(userId: string, walletId: string) {
 }
 
 export function listenWallets(userId: string, cb: (wallets: WalletEntry[]) => void): Unsubscribe {
-    return onSnapshot(col(userId, 'wallets'), snap =>
-        cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as WalletEntry)))
+    return onSnapshot(
+        col(userId, 'wallets'),
+        snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as WalletEntry))),
+        err => console.error("Wallets listener error:", err)
     );
 }
 
@@ -156,7 +166,7 @@ export function listenWallets(userId: string, cb: (wallets: WalletEntry[]) => vo
 
 export async function saveSnapshot(userId: string, snap: Omit<DailySnapshot, 'id'>) {
     const ref = doc(col(userId, 'snapshots'), snap.date);
-    await setDoc(ref, snap);
+    await setDoc(ref, snap, { merge: true });
 }
 
 export async function getSnapshots(userId: string): Promise<DailySnapshot[]> {
