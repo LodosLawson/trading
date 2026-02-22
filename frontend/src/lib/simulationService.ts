@@ -100,7 +100,7 @@ export function listenPortfolio(userId: string, cb: (p: Portfolio | null) => voi
     return onSnapshot(
         simRef(userId),
         snap => cb(snap.exists() ? snap.data() as Portfolio : null),
-        err => console.error("Portfolio listener error:", err)
+        err => { console.error("Portfolio listener error:", err); cb(null); }
     );
 }
 
@@ -119,7 +119,7 @@ export function listenPositions(userId: string, cb: (positions: SimPosition[]) =
     return onSnapshot(
         col(userId, 'positions'),
         snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as SimPosition))),
-        err => console.error("Positions listener error:", err)
+        err => { console.error("Positions listener error:", err); cb([]); }
     );
 }
 
@@ -139,7 +139,7 @@ export function listenTrades(userId: string, cb: (trades: SimTrade[]) => void): 
     return onSnapshot(
         q,
         snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as SimTrade))),
-        err => console.error("Trades listener error:", err)
+        err => { console.error("Trades listener error:", err); cb([]); }
     );
 }
 
@@ -158,7 +158,7 @@ export function listenWallets(userId: string, cb: (wallets: WalletEntry[]) => vo
     return onSnapshot(
         col(userId, 'wallets'),
         snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as WalletEntry))),
-        err => console.error("Wallets listener error:", err)
+        err => { console.error("Wallets listener error:", err); cb([]); }
     );
 }
 
