@@ -126,12 +126,12 @@ export default function WidgetContainer({
         if (onResizeEnd) onResizeEnd(widgetId, w.get(), h.get());
     }, [widgetId, w, h, onResizeEnd]);
 
-    // Gear button (shown on hover in non-edit mode, always in edit mode)
+    // Gear button — top RIGHT, hover to reveal
     const GearButton = () => (
         <button
             onClick={(e) => { e.stopPropagation(); setShowSettings(true); }}
             title="Widget Settings"
-            className="absolute top-2 left-2 z-50 p-1.5 rounded-lg bg-black/60 text-gray-400 hover:text-white hover:bg-black/80 opacity-0 group-hover:opacity-100 transition-all border border-white/5 hover:border-white/20"
+            className="absolute top-2 right-2 z-50 p-1.5 rounded-lg bg-black/60 text-gray-400 hover:text-white hover:bg-black/80 opacity-0 group-hover:opacity-100 transition-all border border-white/5 hover:border-white/20"
         >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -222,11 +222,24 @@ export default function WidgetContainer({
     }
 
     // ── Grid / List / Page mode ──
-    const isActive = activeWindow === widgetId;
-    const zIndex = isActive ? 100 : (savedWin?.z ?? 10 + index);
+    // CRITICAL: gridColumn/gridRow must be on the OUTER div (direct grid child),
+    // NOT on the inner motion.div — otherwise the grid sees equal-width cells.
+
+    const gridStyle = isMobile
+        ? {
+            gridColumn: colSpan >= 6 ? 'span 2' : 'span 1',
+            minHeight: colSpan >= 6 ? '320px' : '260px',
+        }
+        : {
+            gridColumn: `span ${colSpan}`,
+            gridRow: `span ${rowSpan}`,
+        };
 
     return (
-        <div className="relative">
+        <div
+            className="relative group"
+            style={gridStyle}
+        >
             <motion.div
                 layout
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -234,23 +247,11 @@ export default function WidgetContainer({
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2 }}
                 className={`
-                    group relative rounded-2xl border shadow-lg overflow-hidden
+                    h-full w-full rounded-2xl border shadow-lg overflow-hidden
                     ${themeStyle.wrapper}
                     ${isEditing ? 'border-blue-500/50 ring-1 ring-blue-500/20' : themeStyle.border}
                 `}
-                style={
-                    isMobile
-                        ? {
-                            gridColumn: colSpan >= 6 ? 'span 2' : 'span 1',
-                            minHeight: colSpan >= 6 ? '320px' : '260px',
-                            ...(widgetAccent ? { borderColor: `${widgetAccent}40` } : {}),
-                        }
-                        : {
-                            gridColumn: `span ${colSpan}`,
-                            gridRow: `span ${rowSpan}`,
-                            ...(widgetAccent ? { borderColor: `${widgetAccent}40` } : {}),
-                        }
-                }
+                style={{ ...(widgetAccent ? { borderColor: `${widgetAccent}40` } : {}) }}
             >
                 <GearButton />
                 <div className={`h-full w-full ${isEditing ? 'pointer-events-none opacity-50 blur-[1px]' : ''}`}>
