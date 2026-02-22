@@ -31,14 +31,26 @@ interface Widget {
 const DEFAULT_LAYOUT: Widget[] = [];
 
 const AVAILABLE_WIDGETS: { type: WidgetType; label: string; defaultCol: number; defaultRow: number }[] = [
-    { type: 'MARKET', label: 'Market Ticker', defaultCol: 3, defaultRow: 6 },
-    { type: 'NEWS', label: 'News Feed (Classic)', defaultCol: 3, defaultRow: 6 },
-    { type: 'LIVENEWS', label: 'Live Wire (Pro)', defaultCol: 6, defaultRow: 6 },
-    { type: 'CHART', label: 'Chart View', defaultCol: 6, defaultRow: 6 },
-    { type: 'CHAT', label: 'AI Agent', defaultCol: 3, defaultRow: 8 },
-    { type: 'BROWSER', label: 'Web Browser', defaultCol: 6, defaultRow: 4 },
-    { type: 'TRADING', label: 'Trading Panel', defaultCol: 6, defaultRow: 4 },
+    //          type        label                  col  row  rationale
+    { type: 'MARKET', label: 'Market Ticker', defaultCol: 4, defaultRow: 8 }, // list of assets — needs height
+    { type: 'NEWS', label: 'News Feed (Classic)', defaultCol: 4, defaultRow: 8 }, // article list — needs height
+    { type: 'LIVENEWS', label: 'Live Wire (Pro)', defaultCol: 8, defaultRow: 7 }, // wide feed
+    { type: 'CHART', label: 'Chart View', defaultCol: 8, defaultRow: 9 }, // chart needs width + height
+    { type: 'CHAT', label: 'AI Agent', defaultCol: 4, defaultRow: 10 }, // conversation — tall
+    { type: 'BROWSER', label: 'Web Browser', defaultCol: 10, defaultRow: 9 }, // browser needs max real estate
+    { type: 'TRADING', label: 'Trading Panel', defaultCol: 4, defaultRow: 8 }, // form-based — moderate
 ];
+
+// Per-type default window sizes (floating mode) — optimized per content
+const WIDGET_WINDOW_SIZES: Record<string, { w: number; h: number }> = {
+    MARKET: { w: 380, h: 560 }, // narrow column, tall list
+    NEWS: { w: 400, h: 560 }, // narrow column, tall list
+    LIVENEWS: { w: 720, h: 520 }, // wide feed reader
+    CHART: { w: 860, h: 540 }, // wide chart canvas
+    CHAT: { w: 420, h: 600 }, // chat bubble height
+    BROWSER: { w: 960, h: 640 }, // max browser space
+    TRADING: { w: 440, h: 520 }, // form width
+};
 
 export default function TerminalPage() {
     const { user } = useAuth();
@@ -134,17 +146,18 @@ export default function TerminalPage() {
 
     const [activeSymbol, setActiveSymbol] = useState('BINANCE:BTCUSDT');
 
-    // Helper for consistent defaults
+    // Per-type window size, falls back to a sensible generic
     const getDefaultWindowConfig = (id: string) => {
-        const index = layout.findIndex(w => w.id === id);
-        // Fallback if not found (shouldn't happen)
-        const idx = index !== -1 ? index : 0;
+        const idx = layout.findIndex(w => w.id === id);
+        const i = idx !== -1 ? idx : 0;
+        const widgetType = layout[idx]?.type ?? 'CHART';
+        const size = WIDGET_WINDOW_SIZES[widgetType] ?? { w: 560, h: 460 };
         return {
-            x: 100 + (idx * 40),
-            y: 100 + (idx * 40),
-            w: 500,
-            h: 400,
-            z: 10 + idx
+            x: 80 + i * 32,
+            y: 72 + i * 32,
+            w: size.w,
+            h: size.h,
+            z: 10 + i,
         };
     };
 
@@ -367,15 +380,15 @@ export default function TerminalPage() {
             <motion.main
                 layout={settings.layoutMode !== 'window'}
                 className={`relative z-10 flex-1 overflow-y-auto custom-scrollbar ${settings.layoutMode === 'list'
-                    ? 'flex flex-col gap-4 p-4 md:p-6'
-                    : settings.layoutMode === 'window'
-                        ? isMobile
-                            ? 'flex flex-col gap-3 p-4 pb-4'
-                            : 'block p-4 md:p-6'
-                        // Grid mode: 2-col on mobile, 12-col on desktop
-                        : isMobile
-                            ? 'grid grid-cols-2 gap-3 p-3 auto-rows-[minmax(220px,auto)] items-start'
-                            : 'grid grid-cols-12 gap-5 p-5 auto-rows-[minmax(60px,auto)] items-start'
+                        ? 'flex flex-col gap-5 p-4 md:p-6'
+                        : settings.layoutMode === 'window'
+                            ? isMobile
+                                ? 'flex flex-col gap-3 p-4 pb-4'
+                                : 'block p-4 md:p-6'
+                            // Grid: 2-col mobile / 12-col desktop with tuned row heights
+                            : isMobile
+                                ? 'grid grid-cols-2 gap-3 p-3 auto-rows-[minmax(260px,auto)] items-start'
+                                : 'grid grid-cols-12 gap-5 p-5 auto-rows-[minmax(80px,auto)] items-start'
                     }`}
             >
                 <AnimatePresence>

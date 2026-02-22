@@ -153,7 +153,7 @@ export default function WidgetContainer({
                     transition={{ duration: 0.2 }}
                     className={`group w-full rounded-2xl border overflow-hidden shadow-lg mb-3 ${themeStyle.wrapper} ${themeStyle.border}`}
                     style={{
-                        minHeight: colSpan >= 6 ? '300px' : '240px',
+                        minHeight: colSpan >= 6 ? '320px' : '260px',
                         ...(widgetAccent ? { borderColor: `${widgetAccent}30` } : {}),
                     }}
                 >
@@ -242,7 +242,7 @@ export default function WidgetContainer({
                     isMobile
                         ? {
                             gridColumn: colSpan >= 6 ? 'span 2' : 'span 1',
-                            minHeight: colSpan >= 6 ? '280px' : '220px',
+                            minHeight: colSpan >= 6 ? '320px' : '260px',
                             ...(widgetAccent ? { borderColor: `${widgetAccent}40` } : {}),
                         }
                         : {
