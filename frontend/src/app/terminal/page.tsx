@@ -15,7 +15,7 @@ import NewsWidget from '@/components/dashboard/NewsWidget';
 import ChartWidget from '@/components/dashboard/ChartWidget';
 import DashboardChatWidget from '@/components/dashboard/DashboardChatWidget';
 import BrowserWidget from '@/components/dashboard/BrowserWidget';
-import TradingPanel from '@/components/dashboard/TradingPanel';
+import TradingWidget from '@/components/dashboard/TradingWidget';
 
 // Types for our Grid System
 type WidgetType = 'MARKET' | 'NEWS' | 'CHART' | 'CHAT' | 'BROWSER' | 'TRADING' | 'LIVENEWS';
@@ -259,7 +259,7 @@ export default function TerminalPage() {
                 title = 'QUANTUM BROWSER';
                 break;
             case 'TRADING':
-                content = <TradingPanel symbol={activeSymbol} />;
+                content = <TradingWidget activeSymbol={activeSymbol} onSymbolChange={setActiveSymbol} />;
                 title = 'EXECUTION DECK';
                 break;
             default: return null;
