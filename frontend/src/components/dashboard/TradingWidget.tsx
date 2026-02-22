@@ -39,7 +39,7 @@ interface TradingWidgetProps {
 }
 
 export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymbolChange }: TradingWidgetProps) {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const userId = user?.uid || 'guest';
 
     const [tab, setTab] = useState<Tab>('sim');
@@ -136,8 +136,21 @@ export default function TradingWidget({ activeSymbol = 'BINANCE:BTCUSDT', onSymb
         await removeWallet(userId, id);
     };
 
-    // ── Guest Warning ──────────────────────────────────────────────────────────
-    if (userId === 'guest') {
+    // ── Auth still resolving → show spinner, NOT the "Giriş Gerekli" screen ─────
+    if (authLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <motion.div
+                    className="w-8 h-8 rounded-full border-2 border-emerald-500/30 border-t-emerald-500"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                />
+            </div>
+        );
+    }
+
+    // ── Guest Warning (only after auth is confirmed null) ─────────────────────
+    if (!user) {
         return (
             <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
                 <div className="text-4xl">🔐</div>
