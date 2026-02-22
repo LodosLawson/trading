@@ -66,26 +66,33 @@ export default function ChartWidget({
     useEffect(() => {
         if (viewMode !== 'tv') return;
         let tvWidget: any = null;
+        let isMounted = true;
+
         const initWidget = () => {
+            if (!isMounted) return;
             const container = document.getElementById(containerId.current);
             if (!container) { setTimeout(initWidget, 100); return; }
             container.innerHTML = '';
             if ((window as any).TradingView) {
-                tvWidget = new (window as any).TradingView.widget({
-                    autosize: true,
-                    symbol,
-                    interval: 'D',
-                    timezone: 'Etc/UTC',
-                    theme,
-                    style: '1',
-                    locale: 'en',
-                    enable_publishing: false,
-                    allow_symbol_change: true,
-                    container_id: containerId.current,
-                    hide_side_toolbar: false,
-                    hide_top_toolbar: false,
-                    studies: ['RSI@tv-basicstudies', 'MASimple@tv-basicstudies'],
-                });
+                try {
+                    tvWidget = new (window as any).TradingView.widget({
+                        autosize: true,
+                        symbol,
+                        interval: 'D',
+                        timezone: 'Etc/UTC',
+                        theme,
+                        style: '1',
+                        locale: 'en',
+                        enable_publishing: false,
+                        allow_symbol_change: true,
+                        container_id: containerId.current,
+                        hide_side_toolbar: false,
+                        hide_top_toolbar: false,
+                        studies: ['RSI@tv-basicstudies', 'MASimple@tv-basicstudies'],
+                    });
+                } catch (e) {
+                    console.error("TV init error:", e);
+                }
             }
         };
 
@@ -104,7 +111,13 @@ export default function ChartWidget({
             }
         }
 
-        return () => { tvWidget = null; };
+        return () => {
+            isMounted = false;
+            if (tvWidget && typeof tvWidget.remove === 'function') {
+                try { tvWidget.remove(); } catch (e) { /* ignore */ }
+            }
+            tvWidget = null;
+        };
     }, [symbol, theme, viewMode]);
 
     const tickerLabel = symbol.split(':')[1]?.replace('USDT', '') || symbol;
@@ -134,8 +147,8 @@ export default function ChartWidget({
                             key={p.symbol}
                             onClick={() => changeSymbol(p.symbol)}
                             className={`shrink-0 px-2 py-1 text-[9px] font-bold rounded-md border transition-all ${symbol === p.symbol
-                                    ? 'bg-blue-600 border-blue-500 text-white'
-                                    : 'bg-white/3 border-white/8 text-gray-500 hover:text-white hover:border-white/20'
+                                ? 'bg-blue-600 border-blue-500 text-white'
+                                : 'bg-white/3 border-white/8 text-gray-500 hover:text-white hover:border-white/20'
                                 }`}
                         >
                             {p.label}
