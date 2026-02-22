@@ -246,8 +246,9 @@ export default function TerminalPage() {
                 title = 'LIVE WIRE // GLOBAL';
                 break;
             case 'CHART':
-                content = <ChartWidget symbol={activeSymbol} />;
+                content = <ChartWidget symbol={activeSymbol} onSymbolChange={setActiveSymbol} />;
                 title = `CHART // ${activeSymbol.split(':')[1] || activeSymbol}`;
+
                 break;
             case 'CHAT':
                 content = <DashboardChatWidget />;
@@ -380,15 +381,15 @@ export default function TerminalPage() {
             <motion.main
                 layout={settings.layoutMode !== 'window'}
                 className={`relative z-10 flex-1 overflow-y-auto custom-scrollbar ${settings.layoutMode === 'list'
-                        ? 'flex flex-col gap-5 p-4 md:p-6'
-                        : settings.layoutMode === 'window'
-                            ? isMobile
-                                ? 'flex flex-col gap-3 p-4 pb-4'
-                                : 'block p-4 md:p-6'
-                            // Grid: dense auto-flow fills holes intelligently
-                            : isMobile
-                                ? 'grid grid-cols-2 gap-3 p-3 auto-rows-[minmax(260px,auto)] [grid-auto-flow:dense]'
-                                : 'grid grid-cols-12 gap-5 p-5 auto-rows-[minmax(80px,auto)] [grid-auto-flow:dense]'
+                    ? 'flex flex-col gap-5 p-4 md:p-6'
+                    : settings.layoutMode === 'window'
+                        ? isMobile
+                            ? 'flex flex-col gap-3 p-4 pb-4'
+                            : 'block p-4 md:p-6'
+                        // Grid: dense auto-flow fills holes intelligently
+                        : isMobile
+                            ? 'grid grid-cols-2 gap-3 p-3 auto-rows-[minmax(260px,auto)] [grid-auto-flow:dense]'
+                            : 'grid grid-cols-12 gap-5 p-5 auto-rows-[minmax(80px,auto)] [grid-auto-flow:dense]'
                     }`}
             >
                 <AnimatePresence>
