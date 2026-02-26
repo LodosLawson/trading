@@ -12,7 +12,7 @@ interface NewsItem {
     affected_assets?: string[];
 }
 
-export default function NewsWidget({ limit }: { limit?: number }) {
+export default React.memo(function NewsWidget({ limit }: { limit?: number }) {
     const [news, setNews] = useState<NewsItem[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -111,4 +111,4 @@ export default function NewsWidget({ limit }: { limit?: number }) {
             </div>
         </div>
     );
-}
+});

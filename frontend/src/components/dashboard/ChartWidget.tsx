@@ -22,7 +22,7 @@ interface ChartWidgetProps {
     onSymbolChange?: (sym: string) => void;
 }
 
-export default function ChartWidget({
+export default React.memo(function ChartWidget({
     symbol: externalSymbol = 'BINANCE:BTCUSDT',
     theme = 'dark',
     onSymbolChange,
@@ -282,4 +282,4 @@ export default function ChartWidget({
             </div>
         </div>
     );
-}
+});

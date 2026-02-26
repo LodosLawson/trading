@@ -12,7 +12,7 @@ interface Coin {
     price_change_percentage_24h: number;
 }
 
-export default function MarketWidget({ onSelectSymbol, limit }: { onSelectSymbol?: (symbol: string) => void, limit?: number }) {
+export default React.memo(function MarketWidget({ onSelectSymbol, limit }: { onSelectSymbol?: (symbol: string) => void, limit?: number }) {
     const [allCoins, setAllCoins] = useState<Coin[]>([]); // Pool of available coins
     const [displayedCoins, setDisplayedCoins] = useState<Coin[]>([]); // User's watchlist
     const [loading, setLoading] = useState(true);
@@ -153,46 +153,53 @@ export default function MarketWidget({ onSelectSymbol, limit }: { onSelectSymbol
                     </div>
                 ) : (
                     <div className="divide-y divide-white/5">
-                        {displayedCoins.map((coin) => (
-                            <motion.div
-                                key={coin.id}
-                                layout
-                                className="w-full grid grid-cols-3 items-center px-4 py-3 hover:bg-white/[0.04] transition-colors text-left group relative"
-                                onClick={() => onSelectSymbol?.(`BINANCE:${coin.symbol.toUpperCase()}USDT`)}
-                            >
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                    <div className="relative">
-                                        {coin.image && <img src={coin.image} alt={coin.symbol} className="w-4 h-4 rounded-full opacity-80" />}
-                                        {/* Remove Button (Visible on Hover) */}
+                        {displayedCoins.map((coin) => {
+                            const isPositive = coin.price_change_percentage_24h >= 0;
+                            return (
+                                <motion.div
+                                    key={coin.id}
+                                    layout
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    onClick={() => onSelectSymbol?.(`BINANCE:${coin.symbol.toUpperCase()}USDT`)}
+                                    className="grid grid-cols-3 items-center px-4 py-3 hover:bg-white/[0.02] cursor-pointer transition-colors group relative"
+                                >
+                                    {/* Symbol & Icon */}
+                                    <div className="flex items-center gap-2">
+                                        <img src={coin.image} alt={coin.name} className="w-4 h-4 rounded-full bg-white/10" />
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold font-mono text-gray-200 group-hover:text-blue-400 transition-colors uppercase">{coin.symbol}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Price */}
+                                    <div className="text-right">
+                                        <span className="text-xs font-mono font-medium text-gray-300">
+                                            ${coin.current_price.toLocaleString(undefined, { minimumFractionDigits: coin.current_price < 1 ? 4 : 2, maximumFractionDigits: coin.current_price < 1 ? 4 : 2 })}
+                                        </span>
+                                    </div>
+
+                                    {/* 24h Change & Remove Button Container */}
+                                    <div className="text-right flex items-center justify-end relative">
+                                        <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded transition-transform group-hover:-translate-x-6 ${isPositive ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
+                                            {isPositive ? '+' : ''}{coin.price_change_percentage_24h.toFixed(2)}%
+                                        </span>
+
+                                        {/* Remove Button (Revealed on hover) */}
                                         <button
                                             onClick={(e) => handleRemoveCoin(e, coin.id)}
-                                            className="absolute -top-2 -left-2 w-4 h-4 bg-red-500 rounded-full items-center justify-center text-[8px] font-bold text-white hidden group-hover:flex shadow-lg z-10"
+                                            className="absolute right-0 opacity-0 group-hover:opacity-100 p-0.5 text-gray-500 hover:text-red-400 transition-all"
+                                            title="Remove from watchlist"
                                         >
-                                            x
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
                                     </div>
-                                    <div className="text-xs font-bold text-gray-200 group-hover:text-amber-400 transition-colors truncate">
-                                        {coin.symbol.toUpperCase()}
-                                    </div>
-                                </div>
-
-                                <div className="text-right font-mono text-xs text-white">
-                                    ${coin.current_price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: coin.current_price < 1 ? 6 : 2 })}
-                                </div>
-
-                                <div className="text-right flex justify-end">
-                                    <div className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${coin.price_change_percentage_24h >= 0
-                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                                        }`}>
-                                        {coin.price_change_percentage_24h >= 0 ? '+' : ''}{coin.price_change_percentage_24h?.toFixed(2)}%
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
         </div>
     );
-}
+});

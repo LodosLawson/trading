@@ -59,6 +59,19 @@ export default function RootLayout({
           <AppShell>
             {children}
           </AppShell>
+          {/* Error Suppressor for TradingView Async Unmount Bugs */}
+          <Script id="tv-error-suppressor" strategy="beforeInteractive">
+            {`
+              if (typeof window !== 'undefined') {
+                window.addEventListener('unhandledrejection', function(event) {
+                  if (event.reason && (event.reason.message || '').includes("reading 'container'")) {
+                    console.warn('[TV Sync] Suppressed async container unmount error.');
+                    event.preventDefault(); // Stop Next.js from throwing a fatal overlay
+                  }
+                });
+              }
+            `}
+          </Script>
           {/* PWA Service Worker Registration */}
           <Script id="sw-register" strategy="afterInteractive">
             {`

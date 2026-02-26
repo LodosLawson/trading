@@ -52,7 +52,7 @@ interface NewsItem {
     summary?: string;
 }
 
-export default function LiveNewsWidget() {
+export default React.memo(function LiveNewsWidget() {
     const [news, setNews] = useState<NewsItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -251,4 +251,4 @@ export default function LiveNewsWidget() {
             </div>
         </div>
     );
-}
+});
