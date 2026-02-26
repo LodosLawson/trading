@@ -39,6 +39,8 @@ interface TradingWidgetProps {
     authLoading?: boolean;
 }
 
+import { auth } from '@/lib/firebase';
+
 // ─── Outer Guard: no hooks here, just a prop check ───────────────────────────
 export default function TradingWidget(props: TradingWidgetProps) {
     // 1. If we are currently checking auth state with Firebase, show loading
@@ -55,22 +57,25 @@ export default function TradingWidget(props: TradingWidgetProps) {
         );
     }
 
+    // Direct fallback to prevent Context lag causing false negatives
+    const actualUserId = props.userId || auth?.currentUser?.uid;
+
     // 2. Auth check is done. If no user ID is provided, they are explicitly not logged in
-    if (!props.userId || props.userId === '') {
+    if (!actualUserId || actualUserId === '') {
         return (
             <div className="flex flex-col items-center justify-center h-full gap-3 p-6 bg-[#0a0a0f] border border-red-500/10 text-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-red-500/5 blur-[100px] pointer-events-none" />
                 <div className="text-4xl drop-shadow-lg opacity-80 z-10">🔐</div>
                 <div className="text-sm font-black tracking-widest text-red-400 uppercase relative z-10">Erişim Reddedildi</div>
                 <div className="text-[10px] text-gray-500 max-w-[200px] leading-relaxed relative z-10">
-                    Trading simülasyonunu kullanabilmek için güvenlik duvarını (login) geçmeniz gereklidir.
+                    Oturumunuz bulunamadı. Lütfen sayfayı yenileyin veya tekrar giriş yapın.
                 </div>
             </div>
         );
     }
 
     // 3. User is authorized
-    return <TradingWidgetInner {...props} />;
+    return <TradingWidgetInner {...props} userId={actualUserId} />;
 }
 
 // ─── Inner Component: all hooks here, userId always a non-empty string ────────
