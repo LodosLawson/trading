@@ -113,10 +113,32 @@ export default function ChartWidget({
 
         return () => {
             isMounted = false;
+            const existing = document.querySelector('script[src*="tv.js"]');
+            if (existing) {
+                existing.removeEventListener('load', initWidget);
+            }
+
             if (tvWidget && typeof tvWidget.remove === 'function') {
                 try { tvWidget.remove(); } catch (e) { /* ignore */ }
             }
             tvWidget = null;
+
+            // Hack: TradingView evaluates its widget injection asynchronously.
+            // If React unmounts this component *before* TradingView finishes, TV throws an 
+            // Uncaught TypeError: Cannot read properties of null (reading 'container').
+            // We prevent this by leaving a hidden "honeypot" container with the same ID 
+            // in the DOM for a few seconds so TV can safely inject into the void.
+            if (!document.getElementById(containerId.current)) {
+                const dummy = document.createElement('div');
+                dummy.id = containerId.current;
+                dummy.style.display = 'none';
+                document.body.appendChild(dummy);
+                setTimeout(() => {
+                    if (document.body.contains(dummy)) {
+                        document.body.removeChild(dummy);
+                    }
+                }, 3000);
+            }
         };
     }, [symbol, theme, viewMode]);
 

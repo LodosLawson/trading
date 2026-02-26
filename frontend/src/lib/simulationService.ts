@@ -78,6 +78,7 @@ function col(userId: string, name: string) {
 // ─── Portfolio ────────────────────────────────────────────────────────────────
 
 export async function createPortfolio(userId: string, spotAmount: number, futuresAmount: number) {
+    if (!db) return null;
     const data: Portfolio = {
         spotBalance: spotAmount,
         futuresBalance: futuresAmount,
@@ -91,12 +92,14 @@ export async function createPortfolio(userId: string, spotAmount: number, future
 }
 
 export async function getPortfolio(userId: string): Promise<Portfolio | null> {
+    if (!db) return null;
     const { getDoc } = await import('firebase/firestore');
     const snap = await getDoc(simRef(userId));
     return snap.exists() ? snap.data() as Portfolio : null;
 }
 
 export function listenPortfolio(userId: string, cb: (p: Portfolio | null) => void): Unsubscribe {
+    if (!db) { cb(null); return () => { }; }
     return onSnapshot(
         simRef(userId),
         snap => cb(snap.exists() ? snap.data() as Portfolio : null),
@@ -105,17 +108,20 @@ export function listenPortfolio(userId: string, cb: (p: Portfolio | null) => voi
 }
 
 export async function updatePortfolio(userId: string, patch: Partial<Portfolio>) {
+    if (!db) return;
     await updateDoc(simRef(userId), patch as any);
 }
 
 // ─── Positions ────────────────────────────────────────────────────────────────
 
 export async function openPosition(userId: string, pos: Omit<SimPosition, 'id'>): Promise<string> {
+    if (!db) return 'local-id';
     const ref = await addDoc(col(userId, 'positions'), { ...pos, openedAt: serverTimestamp() });
     return ref.id;
 }
 
 export function listenPositions(userId: string, cb: (positions: SimPosition[]) => void): Unsubscribe {
+    if (!db) { cb([]); return () => { }; }
     return onSnapshot(
         col(userId, 'positions'),
         snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as SimPosition))),
@@ -124,17 +130,20 @@ export function listenPositions(userId: string, cb: (positions: SimPosition[]) =
 }
 
 export async function closePosition(userId: string, posId: string) {
+    if (!db) return;
     await deleteDoc(doc(db, 'simulations', userId, 'positions', posId));
 }
 
 // ─── Trades ───────────────────────────────────────────────────────────────────
 
 export async function recordTrade(userId: string, trade: Omit<SimTrade, 'id'>): Promise<string> {
+    if (!db) return 'local-id';
     const ref = await addDoc(col(userId, 'trades'), { ...trade, openedAt: serverTimestamp() });
     return ref.id;
 }
 
 export function listenTrades(userId: string, cb: (trades: SimTrade[]) => void): Unsubscribe {
+    if (!db) { cb([]); return () => { }; }
     const q = query(col(userId, 'trades'), orderBy('openedAt', 'desc'));
     return onSnapshot(
         q,
@@ -146,15 +155,18 @@ export function listenTrades(userId: string, cb: (trades: SimTrade[]) => void): 
 // ─── Wallets ──────────────────────────────────────────────────────────────────
 
 export async function addWallet(userId: string, wallet: Omit<WalletEntry, 'id'>): Promise<string> {
+    if (!db) return 'local-id';
     const ref = await addDoc(col(userId, 'wallets'), { ...wallet, addedAt: serverTimestamp() });
     return ref.id;
 }
 
 export async function removeWallet(userId: string, walletId: string) {
+    if (!db) return;
     await deleteDoc(doc(db, 'simulations', userId, 'wallets', walletId));
 }
 
 export function listenWallets(userId: string, cb: (wallets: WalletEntry[]) => void): Unsubscribe {
+    if (!db) { cb([]); return () => { }; }
     return onSnapshot(
         col(userId, 'wallets'),
         snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as WalletEntry))),
@@ -165,11 +177,13 @@ export function listenWallets(userId: string, cb: (wallets: WalletEntry[]) => vo
 // ─── Snapshots ────────────────────────────────────────────────────────────────
 
 export async function saveSnapshot(userId: string, snap: Omit<DailySnapshot, 'id'>) {
+    if (!db) return;
     const ref = doc(col(userId, 'snapshots'), snap.date);
     await setDoc(ref, snap, { merge: true });
 }
 
 export async function getSnapshots(userId: string): Promise<DailySnapshot[]> {
+    if (!db) return [];
     const q = query(col(userId, 'snapshots'), orderBy('date', 'desc'));
     const snap = await getDocs(q);
     return snap.docs.map(d => ({ id: d.id, ...d.data() } as DailySnapshot));
