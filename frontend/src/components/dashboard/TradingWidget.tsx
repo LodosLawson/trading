@@ -41,27 +41,35 @@ interface TradingWidgetProps {
 
 // ─── Outer Guard: no hooks here, just a prop check ───────────────────────────
 export default function TradingWidget(props: TradingWidgetProps) {
+    // 1. If we are currently checking auth state with Firebase, show loading
     if (props.authLoading) {
         return (
-            <div className="flex items-center justify-center h-full gap-3 p-6 text-center">
+            <div className="flex flex-col items-center justify-center h-full gap-4 p-6 bg-[#0a0a0f] text-center">
                 <motion.div
-                    className="w-8 h-8 rounded-full border-2 border-emerald-500/30 border-t-emerald-500"
+                    className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-500"
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 />
+                <div className="text-[10px] text-emerald-500/70 tracking-widest uppercase font-mono animate-pulse">Kimlik Doğrulanıyor...</div>
             </div>
         );
     }
-    // userId '' = not logged in (terminal page passes user?.uid || '')
-    if (!props.userId) {
+
+    // 2. Auth check is done. If no user ID is provided, they are explicitly not logged in
+    if (!props.userId || props.userId === '') {
         return (
-            <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
-                <div className="text-4xl">🔐</div>
-                <div className="text-sm font-bold text-white">Giriş Gerekli</div>
-                <div className="text-xs text-gray-500">Trading simülasyonunu kullanmak için hesabınıza giriş yapın.</div>
+            <div className="flex flex-col items-center justify-center h-full gap-3 p-6 bg-[#0a0a0f] border border-red-500/10 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-red-500/5 blur-[100px] pointer-events-none" />
+                <div className="text-4xl drop-shadow-lg opacity-80 z-10">🔐</div>
+                <div className="text-sm font-black tracking-widest text-red-400 uppercase relative z-10">Erişim Reddedildi</div>
+                <div className="text-[10px] text-gray-500 max-w-[200px] leading-relaxed relative z-10">
+                    Trading simülasyonunu kullanabilmek için güvenlik duvarını (login) geçmeniz gereklidir.
+                </div>
             </div>
         );
     }
+
+    // 3. User is authorized
     return <TradingWidgetInner {...props} />;
 }
 

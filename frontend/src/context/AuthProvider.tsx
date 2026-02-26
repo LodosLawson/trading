@@ -45,22 +45,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(false);
             return;
         }
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
+
+        // This subscription should stay alive globally. 
+        // DO NOT tie it to route changes, otherwise Next.js will restart the listener 
+        // and instantly clear the user state before fetching it again.
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
             setLoading(false);
-            if (user && pathname === '/') {
+
+            // Only auto-redirect on login if they are specifically sitting on the homepage:
+            if (currentUser && pathname === '/') {
                 router.push('/terminal');
             }
         });
 
         return () => unsubscribe();
-    }, [pathname]); // Add pathname dependency to re-check if it changes, though mostly on mount/auth change is enough. Actually strictly `[pathname]` might causing loop if not careful.
-    // Better: just check inside the auth listener. removing pathname from dependency array to avoid loops, as onAuthStateChanged is the trigger.
-    // Wait, if I am on '/', and user is loaded, I want to go to '/terminal'.
-    // If I reload on '/terminal', user loads, pathname is '/terminal', condition fails. Good.
-    // If I am on '/', user loads, condition true, redirect. Good.
-
-    // ... rest of code
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Empty dependency array keeps the listener stable across navigation
 
     const signInWithGoogle = async () => {
         if (!auth) return;
