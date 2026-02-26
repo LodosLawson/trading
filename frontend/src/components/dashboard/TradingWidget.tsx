@@ -57,24 +57,16 @@ export default function TradingWidget(props: TradingWidgetProps) {
         );
     }
 
-    // Direct fallback to prevent Context lag causing false negatives
-    const actualUserId = props.userId || auth?.currentUser?.uid;
+    // Direct fallback: If no React Context user, and no direct Firebase user, we fallback to 'guest'.
+    // This allows the user to immediately track wallets and play the simulation without logging in.
+    let actualUserId = props.userId || auth?.currentUser?.uid || 'guest';
 
-    // 2. Auth check is done. If no user ID is provided, they are explicitly not logged in
-    if (!actualUserId || actualUserId === '') {
-        return (
-            <div className="flex flex-col items-center justify-center h-full gap-3 p-6 bg-[#0a0a0f] border border-red-500/10 text-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-red-500/5 blur-[100px] pointer-events-none" />
-                <div className="text-4xl drop-shadow-lg opacity-80 z-10">🔐</div>
-                <div className="text-sm font-black tracking-widest text-red-400 uppercase relative z-10">Erişim Reddedildi</div>
-                <div className="text-[10px] text-gray-500 max-w-[200px] leading-relaxed relative z-10">
-                    Oturumunuz bulunamadı. Lütfen sayfayı yenileyin veya tekrar giriş yapın.
-                </div>
-            </div>
-        );
+    // In rare cases where props.userId is literally an empty string from TerminalPage, force it to 'guest'
+    if (actualUserId === '') {
+        actualUserId = 'guest';
     }
 
-    // 3. User is authorized
+    // 3. User is authorized (or playing as guest)
     return <TradingWidgetInner {...props} userId={actualUserId} />;
 }
 
