@@ -17,11 +17,14 @@ import TradePanel from '../sim/TradePanel';
 import PositionsList from '../sim/PositionsList';
 import PnlChart from '../sim/PnlChart';
 import WalletTracker from '../sim/WalletTracker';
+import ChartWidget from './ChartWidget'; // Import TV Chart
 
-type Tab = 'sim' | 'positions' | 'history' | 'pnl' | 'wallet';
+type Tab = 'sim' | 'positions' | 'history' | 'pnl' | 'wallet' | 'tv' | 'mt';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
     { id: 'sim', label: 'Sim', icon: '◈' },
+    { id: 'tv', label: 'TV Grafik', icon: '📊' },
+    { id: 'mt', label: 'MetaTrader', icon: '⚡' },
     { id: 'positions', label: 'Pozisyon', icon: '◉' },
     { id: 'history', label: 'Geçmiş', icon: '◷' },
     { id: 'pnl', label: 'PnL', icon: '◊' },
@@ -79,6 +82,11 @@ function TradingWidgetInner({ activeSymbol = 'BINANCE:BTCUSDT', onSymbolChange, 
     const [wallets, setWallets] = useState<WalletEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const snapshotDone = useRef(false);
+
+    // MetaTrader Mock State
+    const [mtStatus, setMtStatus] = useState<'idle' | 'connecting' | 'connected'>('idle');
+    const [mtAccounts, setMtAccounts] = useState({ broker: 'IC Markets - Live 15', login: '' });
+    const [mtTrades, setMtTrades] = useState<{ id: string; symbol: string; side: string; qty: number; pnl: number }[]>([]);
 
     // ── Firebase real-time listeners ──────────────────────────────────────────
     useEffect(() => {
@@ -163,6 +171,20 @@ function TradingWidgetInner({ activeSymbol = 'BINANCE:BTCUSDT', onSymbolChange, 
             }),
             updatePortfolio(userId, portfolioPatch),
         ]);
+    };
+
+    // MT Connection Form Handler
+    const handleMtConnect = (e: React.FormEvent) => {
+        e.preventDefault();
+        setMtStatus('connecting');
+        setTimeout(() => {
+            setMtStatus('connected');
+            // Mock active MT5 trades
+            setMtTrades([
+                { id: 'mt1', symbol: 'BINANCE:BTCUSDT', side: 'LONG', qty: 0.5, pnl: 450.25 },
+                { id: 'mt2', symbol: 'BINANCE:ETHUSDT', side: 'SHORT', qty: 2.0, pnl: -120.50 },
+            ]);
+        }, 2000);
     };
 
     // ── Loading state ─────────────────────────────────────────────────────────
@@ -288,6 +310,108 @@ function TradingWidgetInner({ activeSymbol = 'BINANCE:BTCUSDT', onSymbolChange, 
                                 onAdd={async w => { await addWallet(userId, w); }}
                                 onRemove={id => removeWallet(userId, id)}
                             />
+                        )}
+                        {tab === 'tv' && (
+                            <div className="relative w-full h-[600px] min-h-[400px]">
+                                <ChartWidget symbol={activeSymbol} onSymbolChange={onSymbolChange} />
+                                {/* MOCK MT TRADES OVERLAY */}
+                                {mtStatus === 'connected' && mtTrades.length > 0 && (
+                                    <div className="absolute bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest text-right mb-1">
+                                            Active MT Trades
+                                        </div>
+                                        {mtTrades.map(trade => (
+                                            <motion.div
+                                                initial={{ opacity: 0, x: 20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                key={trade.id}
+                                                className="pointer-events-auto bg-[#0a0a0f]/90 backdrop-blur-md border border-white/10 rounded-xl px-4 py-3 shadow-2xl flex items-center justify-between gap-6 hover:border-white/20 transition-colors"
+                                            >
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${trade.side === 'LONG' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                                                        <span className="text-sm font-bold text-white">{trade.symbol.split(':')[1] || trade.symbol}</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-500 mt-1 font-mono">
+                                                        {trade.qty.toFixed(2)} LOT • {trade.side}
+                                                    </div>
+                                                </div>
+                                                <div className={`text-sm font-mono font-bold ${trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                    {trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {tab === 'mt' && (
+                            <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="w-full max-w-sm bg-white/3 border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 pointer-events-none" />
+
+                                    <div className="text-center mb-8">
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+                                            <span className="text-2xl">⚡</span>
+                                        </div>
+                                        <h3 className="text-lg font-bold tracking-tight text-white mb-1">MetaTrader Connect</h3>
+                                        <p className="text-xs text-gray-500">Sync your MT4/MT5 account live.</p>
+                                    </div>
+
+                                    {mtStatus === 'idle' && (
+                                        <form onSubmit={handleMtConnect} className="space-y-4">
+                                            <div>
+                                                <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Broker / Server</label>
+                                                <input required type="text" placeholder="e.g. ICMarkets-Live15" value={mtAccounts.broker} onChange={e => setMtAccounts({ ...mtAccounts, broker: e.target.value })} className="w-full bg-black/40 border border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-gray-700" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Login ID</label>
+                                                <input required type="number" placeholder="Account Number" value={mtAccounts.login} onChange={e => setMtAccounts({ ...mtAccounts, login: e.target.value })} className="w-full bg-black/40 border border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-gray-700" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Password</label>
+                                                <input required type="password" placeholder="••••••••" className="w-full bg-black/40 border border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-gray-700" />
+                                            </div>
+
+                                            <button type="submit" className="w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] transition-all">
+                                                Bağlan
+                                            </button>
+                                        </form>
+                                    )}
+
+                                    {mtStatus === 'connecting' && (
+                                        <div className="flex flex-col items-center justify-center py-12">
+                                            <div className="relative w-16 h-16 mb-4">
+                                                <div className="absolute inset-0 rounded-full border-2 border-white/10"></div>
+                                                <motion.div className="absolute inset-0 rounded-full border-2 border-t-blue-500" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} />
+                                            </div>
+                                            <div className="text-xs font-mono text-blue-400 tracking-widest uppercase animate-pulse">Terminale Bağlanıyor...</div>
+                                        </div>
+                                    )}
+
+                                    {mtStatus === 'connected' && (
+                                        <div className="flex flex-col items-center justify-center text-center py-8">
+                                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl mb-4 border border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+                                                ✓
+                                            </motion.div>
+                                            <h3 className="text-white font-bold text-lg mb-1">{mtAccounts.broker}</h3>
+                                            <div className="text-xs text-gray-500 font-mono mb-6">Account: {mtAccounts.login}</div>
+                                            <div className="w-full bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+                                                <div className="text-[10px] text-emerald-500/70 uppercase tracking-widest mb-1">Bağlantı Durumu</div>
+                                                <div className="text-emerald-400 font-bold text-sm">Aktif & Senkronize</div>
+                                            </div>
+                                            <button onClick={() => setMtStatus('idle')} className="mt-6 text-xs text-gray-500 hover:text-white transition-colors underline decoration-white/20 underline-offset-4">
+                                                Bağlantıyı Kes
+                                            </button>
+                                        </div>
+                                    )}
+
+                                </motion.div>
+                            </div>
                         )}
                     </motion.div>
                 </AnimatePresence>
