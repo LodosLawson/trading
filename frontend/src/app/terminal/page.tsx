@@ -16,9 +16,10 @@ import ChartWidget from '@/components/dashboard/ChartWidget';
 import DashboardChatWidget from '@/components/dashboard/DashboardChatWidget';
 import BrowserWidget from '@/components/dashboard/BrowserWidget';
 import TradingWidget from '@/components/dashboard/TradingWidget';
+import MetaTraderWidget from '@/components/dashboard/MetaTraderWidget';
 
 // Types for our Grid System
-type WidgetType = 'MARKET' | 'NEWS' | 'CHART' | 'CHAT' | 'BROWSER' | 'TRADING' | 'LIVENEWS';
+type WidgetType = 'MARKET' | 'NEWS' | 'CHART' | 'CHAT' | 'BROWSER' | 'TRADING' | 'LIVENEWS' | 'METATRADER';
 
 interface Widget {
     id: string;
@@ -39,6 +40,7 @@ const AVAILABLE_WIDGETS: { type: WidgetType; label: string; defaultCol: number; 
     { type: 'CHAT', label: 'AI Agent', defaultCol: 4, defaultRow: 10 }, // conversation — tall
     { type: 'BROWSER', label: 'Web Browser', defaultCol: 10, defaultRow: 9 }, // browser needs max real estate
     { type: 'TRADING', label: 'Trading Panel', defaultCol: 4, defaultRow: 8 }, // form-based — moderate
+    { type: 'METATRADER', label: 'MetaTrader Terminal', defaultCol: 8, defaultRow: 9 }, // wide combined view
 ];
 
 // Per-type default window sizes (floating mode) — optimized per content
@@ -50,6 +52,7 @@ const WIDGET_WINDOW_SIZES: Record<string, { w: number; h: number }> = {
     CHAT: { w: 420, h: 600 }, // chat bubble height
     BROWSER: { w: 960, h: 640 }, // max browser space
     TRADING: { w: 440, h: 520 }, // form width
+    METATRADER: { w: 860, h: 540 }, // wide chart + list
 };
 
 export default function TerminalPage() {
@@ -191,6 +194,7 @@ export default function TerminalPage() {
     const WIDGET_TITLES: Record<string, string> = {
         MARKET: 'Market Ticker', NEWS: 'Intelligence Feed', LIVENEWS: 'Live Wire',
         CHART: 'Chart View', CHAT: 'AI Analyst', BROWSER: 'Quantum Browser', TRADING: 'Execution Deck',
+        METATRADER: 'MetaTrader Workspace'
     };
 
     // Widget settings change: theme, accent, title, size
@@ -261,6 +265,10 @@ export default function TerminalPage() {
             case 'TRADING':
                 content = <TradingWidget activeSymbol={activeSymbol} onSymbolChange={setActiveSymbol} userId={user?.uid || ''} authLoading={authLoading} />;
                 title = 'EXECUTION DECK';
+                break;
+            case 'METATRADER':
+                content = <MetaTraderWidget />;
+                title = 'METATRADER WORKSPACE';
                 break;
             default: return null;
         }
