@@ -53,10 +53,17 @@ def health_check():
 
 from services import market_data
 from services import ai_agent
+from services.metatrader_service import MT5Service
 from pydantic import BaseModel
+from fastapi import HTTPException
 
 class ChatRequest(BaseModel):
     message: str
+
+class MTConnectRequest(BaseModel):
+    login: int
+    password: str
+    server: str
 
 @app.get("/api/insight")
 def get_insight():
@@ -123,3 +130,41 @@ def get_crypto_prices(vs_currency: str = "usd", per_page: int = 100):
     Returns live crypto prices from CoinGecko.
     """
     return market_data.fetch_crypto_prices(vs_currency=vs_currency, per_page=per_page)
+
+# --- MetaTrader 5 Endpoints ---
+
+@app.post("/api/mt/connect")
+def connect_mt(request: MTConnectRequest):
+    """
+    Connect to MT5 terminal and return account info.
+    """
+    success = MT5Service.connect(request.login, request.password, request.server)
+    if not success:
+        raise HTTPException(status_code=401, detail="Failed to connect to MT5. Check credentials or ensure terminal is running.")
+    
+    info = MT5Service.get_account_info()
+    return {"status": "success", "account": info}
+
+@app.post("/api/mt/disconnect")
+def disconnect_mt():
+    """
+    Disconnect from MT5 terminal.
+    """
+    success = MT5Service.disconnect()
+    return {"status": "success" if success else "error"}
+
+@app.get("/api/mt/positions")
+def get_mt_positions():
+    """
+    Get all active positions from connected MT5 account.
+    """
+    positions = MT5Service.get_positions()
+    summary = MT5Service.get_account_info()
+    
+    return {
+        "status": "success",
+        "positions": positions,
+        "balance": summary.get("balance", 0) if summary else 0,
+        "equity": summary.get("equity", 0) if summary else 0,
+        "profit": summary.get("profit", 0) if summary else 0
+    }

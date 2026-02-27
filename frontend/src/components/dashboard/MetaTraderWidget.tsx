@@ -17,30 +17,88 @@ interface MTTrade {
 
 export default function MetaTraderWidget() {
     const [status, setStatus] = useState<'idle' | 'connecting' | 'connected'>('idle');
-    const [accounts, setAccounts] = useState({ broker: 'IC Markets - Live 15', login: '' });
+    const [accounts, setAccounts] = useState({ broker: 'ICMarketsSC-Demo', login: '', password: '' });
     const [trades, setTrades] = useState<MTTrade[]>([]);
+    const [summary, setSummary] = useState({ balance: 0, equity: 0, profit: 0 });
+    const [errorMsg, setErrorMsg] = useState('');
     const [activeSymbol, setActiveSymbol] = useState('BINANCE:BTCUSDT');
 
-    const handleConnect = (e: React.FormEvent) => {
+    const API_URL = 'http://localhost:8000'; // FastAPI backend
+
+    const handleConnect = async (e: React.FormEvent) => {
         e.preventDefault();
         setStatus('connecting');
-        setTimeout(() => {
-            setStatus('connected');
-            // Mock real MT5 trades
-            setTrades([
-                { id: 'mt1', symbol: 'BINANCE:BTCUSDT', side: 'LONG', qty: 0.5, entryPrice: 94500, currentPrice: 95400.5, pnl: 450.25, openedAt: new Date(Date.now() - 3600000) },
-                { id: 'mt2', symbol: 'BINANCE:ETHUSDT', side: 'SHORT', qty: 2.0, entryPrice: 2850, currentPrice: 2870, pnl: -120.50, openedAt: new Date(Date.now() - 7200000) },
-                { id: 'mt3', symbol: 'NASDAQ:TSLA', side: 'LONG', qty: 10, entryPrice: 190.5, currentPrice: 195.2, pnl: 47.00, openedAt: new Date(Date.now() - 14400000) },
-            ]);
-        }, 2500);
+        setErrorMsg('');
+
+        try {
+            const res = await fetch(`${API_URL}/api/mt/connect`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    login: parseInt(accounts.login),
+                    password: accounts.password,
+                    server: accounts.broker
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                setStatus('connected');
+                if (data.account) {
+                    setSummary({ balance: data.account.balance || 0, equity: data.account.equity || 0, profit: data.account.profit || 0 });
+                }
+            } else {
+                setStatus('idle');
+                setErrorMsg(data.detail || 'Connection failed. Check settings.');
+            }
+        } catch (err) {
+            setStatus('idle');
+            setErrorMsg('Network error connecting to backend API.');
+        }
     };
 
-    const handleDisconnect = () => {
+    const handleDisconnect = async () => {
+        try {
+            await fetch(`${API_URL}/api/mt/disconnect`, { method: 'POST' });
+        } catch (e) {
+            console.error('Disconnect error', e);
+        }
         setStatus('idle');
         setTrades([]);
+        setSummary({ balance: 0, equity: 0, profit: 0 });
     };
 
-    const totalPnl = trades.reduce((acc, t) => acc + t.pnl, 0);
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (status === 'connected') {
+            const fetchPositions = async () => {
+                try {
+                    const res = await fetch(`${API_URL}/api/mt/positions`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            const newTrades = data.positions.map((p: any) => ({
+                                ...p,
+                                openedAt: new Date(p.openedAt)
+                            }));
+                            setTrades(newTrades);
+                            setSummary({ balance: data.balance, equity: data.equity, profit: data.profit });
+
+                            // Prevent error if there are trades but no active symbol (auto-select first)
+                            if (newTrades.length > 0 && !newTrades.find((t: any) => t.symbol === activeSymbol)) {
+                                setActiveSymbol(newTrades[0].symbol);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Polling error', e);
+                }
+            };
+
+            fetchPositions(); // trigger immediately
+            interval = setInterval(fetchPositions, 2000); // Poll every 2 seconds
+        }
+        return () => clearInterval(interval);
+    }, [status, activeSymbol]);
 
     // --- Disconnected / Login View ---
     if (status !== 'connected') {
@@ -78,8 +136,14 @@ export default function MetaTraderWidget() {
                             </div>
                             <div>
                                 <label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Master Password</label>
-                                <input required type="password" placeholder="••••••••" className="w-full bg-black/40 border border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-gray-700" />
+                                <input required type="password" placeholder="••••••••" value={accounts.password} onChange={e => setAccounts({ ...accounts, password: e.target.value })} className="w-full bg-black/40 border border-white/10 focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-gray-700" />
                             </div>
+
+                            {errorMsg && (
+                                <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-2.5 rounded-lg font-mono">
+                                    {errorMsg}
+                                </div>
+                            )}
 
                             <button type="submit" className="w-full py-4 mt-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(59,130,246,0.2)] hover:shadow-[0_0_30px_rgba(59,130,246,0.4)] transition-all">
                                 Execute Connection
@@ -136,9 +200,12 @@ export default function MetaTraderWidget() {
 
                     <div className="grid grid-cols-2 gap-2">
                         <div className="bg-black/40 border border-white/5 rounded-lg p-2.5">
-                            <div className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Total PnL</div>
-                            <div className={`text-sm font-bold font-mono ${totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-[9px] text-gray-500 uppercase tracking-widest">Total PnL</span>
+                                <span className="text-[9px] text-gray-500 font-mono">Bal: ${summary.balance.toFixed(2)}</span>
+                            </div>
+                            <div className={`text-sm font-bold font-mono ${summary.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {summary.profit >= 0 ? '+' : ''}${summary.profit.toFixed(2)}
                             </div>
                         </div>
                         <div className="bg-black/40 border border-white/5 rounded-lg p-2.5">
