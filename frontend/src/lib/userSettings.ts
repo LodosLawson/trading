@@ -34,12 +34,14 @@ export interface UserSettings {
     navigationMode: NavigationMode;
     widgets: Record<string, WidgetConfig>;
     savedLayout?: LayoutWidget[]; // persisted widget list
+    serverUrl?: string; // Custom backend connection preference
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
     theme: 'dark',
     layoutMode: 'grid',
     navigationMode: 'sidebar',
+    serverUrl: '', // Maps to system default / ENV
     widgets: {
         'market-overview': { id: 'market-overview', visible: true, order: 0 },
         'chart-widget': { id: 'chart-widget', visible: true, order: 1 },

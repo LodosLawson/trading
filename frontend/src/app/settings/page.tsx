@@ -145,9 +145,57 @@ export default function SettingsPage() {
                         </div>
                     </section>
 
+                    {/* 3. Server Configuration */}
+                    <section className="space-y-6 md:col-span-2">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-500">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
+                            </div>
+                            <h2 className="text-xl font-bold tracking-tight">Backend Server Connection</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <button
+                                onClick={() => handleSave({ ...settings, serverUrl: '' })}
+                                className={`p-4 flex flex-col justify-center items-start rounded-2xl border transition-all ${!settings.serverUrl ? 'bg-pink-500/10 border-pink-500' : 'bg-[#0a0a0f] border-white/5 hover:border-white/10'}`}
+                            >
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className={`w-2.5 h-2.5 rounded-full ${!settings.serverUrl ? 'bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]' : 'bg-gray-600'}`} />
+                                    <span className={`text-sm font-bold ${!settings.serverUrl ? 'text-pink-500' : 'text-gray-400'}`}>Pulse Cloud (Default)</span>
+                                </div>
+                                <p className="text-xs text-gray-500 text-left">Connects to the official LockTrace cloud servers via environment variables.</p>
+                            </button>
+
+                            <button
+                                onClick={() => handleSave({ ...settings, serverUrl: 'http://localhost:8000' })}
+                                className={`p-4 flex flex-col justify-center items-start rounded-2xl border transition-all ${settings.serverUrl === 'http://localhost:8000' ? 'bg-pink-500/10 border-pink-500' : 'bg-[#0a0a0f] border-white/5 hover:border-white/10'}`}
+                            >
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className={`w-2.5 h-2.5 rounded-full ${settings.serverUrl === 'http://localhost:8000' ? 'bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]' : 'bg-gray-600'}`} />
+                                    <span className={`text-sm font-bold ${settings.serverUrl === 'http://localhost:8000' ? 'text-pink-500' : 'text-gray-400'}`}>Local Node</span>
+                                </div>
+                                <p className="text-xs text-gray-500 text-left">Connects to a backend running on port 8000 of your current device.</p>
+                            </button>
+
+                            <div className={`p-4 flex flex-col justify-center items-start rounded-2xl border transition-all ${(settings.serverUrl && settings.serverUrl !== 'http://localhost:8000') ? 'bg-pink-500/10 border-pink-500' : 'bg-[#0a0a0f] border-white/5 focus-within:border-white/20'}`}>
+                                <div className="flex items-center gap-2 mb-2 w-full">
+                                    <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${(settings.serverUrl && settings.serverUrl !== 'http://localhost:8000') ? 'bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]' : 'bg-gray-600'}`} />
+                                    <span className={`text-sm font-bold w-full ${(settings.serverUrl && settings.serverUrl !== 'http://localhost:8000') ? 'text-pink-500' : 'text-gray-400'}`}>Custom Remote</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="https://your-ngrok.url"
+                                    value={(settings.serverUrl && settings.serverUrl !== 'http://localhost:8000') ? settings.serverUrl : ''}
+                                    onChange={(e) => handleSave({ ...settings, serverUrl: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500/50 transition-colors mt-1 font-mono"
+                                />
+                            </div>
+                        </div>
+                    </section>
+
                 </div>
 
-                {/* 3. Module Visibility */}
+                {/* 4. Module Visibility */}
                 <section className="bg-[#0a0a0f] border border-white/5 rounded-3xl p-8">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500">

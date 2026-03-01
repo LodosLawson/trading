@@ -22,8 +22,52 @@ export default function MetaTraderWidget() {
     const [summary, setSummary] = useState({ balance: 0, equity: 0, profit: 0 });
     const [errorMsg, setErrorMsg] = useState('');
     const [activeSymbol, setActiveSymbol] = useState('BINANCE:BTCUSDT');
+    const [apiUrl, setApiUrl] = useState<string>(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
 
-    const API_URL = 'http://localhost:8000'; // FastAPI backend
+    useEffect(() => {
+        // Read the custom serverUrl from settings if it exists
+        const loadSettingsUrl = async () => {
+            try {
+                // Determine user gracefully
+                let actualUserId = 'guest';
+
+                // Try to get setting 
+                const { getUserSettings } = await import('@/lib/userSettings');
+                const settings = await getUserSettings(actualUserId);
+
+                if (settings && settings.serverUrl) {
+                    setApiUrl(settings.serverUrl);
+                } else if (process.env.NEXT_PUBLIC_API_URL) {
+                    setApiUrl(process.env.NEXT_PUBLIC_API_URL);
+                } else {
+                    setApiUrl('http://localhost:8000');
+                }
+            } catch (e) {
+                console.error("Failed to load server URL preference", e);
+            }
+        };
+
+        loadSettingsUrl();
+
+        // Setup listener for dynamic updates from settings page
+        const handleSettingsUpdate = (e: CustomEvent) => {
+            const newSettings = e.detail;
+            if (newSettings && newSettings.serverUrl !== undefined) {
+                if (newSettings.serverUrl) {
+                    setApiUrl(newSettings.serverUrl);
+                } else {
+                    setApiUrl(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
+                }
+            }
+        };
+
+        if (typeof window !== 'undefined') {
+            window.addEventListener('mp-settings-updated', handleSettingsUpdate as EventListener);
+            return () => window.removeEventListener('mp-settings-updated', handleSettingsUpdate as EventListener);
+        }
+    }, []);
+
+    const API_URL = apiUrl;
 
     const handleConnect = async (e: React.FormEvent) => {
         e.preventDefault();

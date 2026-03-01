@@ -107,7 +107,9 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
 
         // Handle search queries vs URLs
         if (!target.startsWith('http') && !target.startsWith('about:')) {
-            if (target.includes('.') && !target.includes(' ')) {
+            if (target.includes('localhost') || target.includes('127.0.0.1')) {
+                target = `http://${target}`;
+            } else if (target.includes('.') && !target.includes(' ')) {
                 target = `https://${target}`;
             } else {
                 return `https://www.bing.com/search?q=${encodeURIComponent(target)}`;
@@ -281,7 +283,7 @@ export default function BrowserWidget({ className = '', mode = 'full' }: Browser
                         src={activeTab.url}
                         title="Browser View"
                         className="w-full h-full border-none"
-                        sandbox="allow-same-origin allow-scripts allow-forms"
+                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
                         referrerPolicy="no-referrer"
                         onError={() => setIsLoading(false)}
                         onLoad={() => setIsLoading(false)}
