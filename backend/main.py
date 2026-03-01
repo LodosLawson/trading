@@ -55,8 +55,10 @@ def health_check():
 from services import market_data
 from services import ai_agent
 from services.metatrader_service import MT5Service
+from services import config_manager
 from pydantic import BaseModel
 from fastapi import HTTPException
+import google.generativeai as genai
 
 class ChatRequest(BaseModel):
     message: str
@@ -65,6 +67,34 @@ class MTConnectRequest(BaseModel):
     login: int
     password: str
     server: str
+
+class ConfigUpdateRequest(BaseModel):
+    config: dict
+
+@app.get("/api/config")
+def get_local_config():
+    """Returns the current local configuration (with masked API keys for security)."""
+    config = config_manager.load_config()
+    # Mask sensitive keys before returning to frontend
+    masked_config = {}
+    for k, v in config.items():
+        if k.endswith("_API_KEY") and v:
+            masked_config[k] = v[:4] + "*" * (len(v) - 8) + v[-4:] if len(v) > 8 else "***"
+        else:
+            masked_config[k] = v
+    return {"status": "success", "config": masked_config}
+
+@app.post("/api/config")
+def update_local_config(request: ConfigUpdateRequest):
+    """Updates the local backend configuration file."""
+    # Never log full API keys here
+    updated = config_manager.save_config(request.config)
+    
+    # Reload AI API key if it was updated
+    if "GOOGLE_API_KEY" in request.config:
+        genai.configure(api_key=request.config["GOOGLE_API_KEY"])
+        
+    return {"status": "success", "message": "Configuration saved locally."}
 
 @app.get("/api/insight")
 def get_insight():
@@ -169,3 +199,8 @@ def get_mt_positions():
         "equity": summary.get("equity", 0) if summary else 0,
         "profit": summary.get("profit", 0) if summary else 0
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    # When running as a packaged desktop script, start the server
+    uvicorn.run(app, host="127.0.0.1", port=8000)

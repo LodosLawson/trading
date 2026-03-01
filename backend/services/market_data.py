@@ -23,7 +23,8 @@ def fetch_market_news(query: str = "Finance Investing Stock Market") -> List[Dic
     """
     Fetches real-time news from Google News via Apify.
     """
-    api_key = os.getenv("APIFY_API_KEY")
+    from . import config_manager
+    api_key = config_manager.get_api_key("APIFY_API_KEY")
     if not api_key:
         print("APIFY_API_KEY missing, using mock.")
         return []

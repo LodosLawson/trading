@@ -2,9 +2,12 @@ import google.generativeai as genai
 import os
 import json
 from typing import Dict, Any, List
+from . import config_manager
 
 # Configure API
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+_api_key = config_manager.get_api_key("GOOGLE_API_KEY")
+if _api_key:
+    genai.configure(api_key=_api_key)
 
 # Model Configuration
 GENERATION_CONFIG = {
