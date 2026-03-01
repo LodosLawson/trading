@@ -5,25 +5,27 @@ logger = logging.getLogger(__name__)
 
 class MT5Service:
     @staticmethod
-    def connect(login: int, password: str, server: str) -> bool:
+    def connect(login: int, password: str, server: str) -> tuple[bool, str]:
         """
         Connect to a MetaTrader 5 account.
         Requires MT5 terminal to be installed and accessible.
         """
         # Initialize MT5
         if not mt5.initialize():
-            logger.error(f"initialize() failed, error code = {mt5.last_error()}")
-            return False
+            err = mt5.last_error()
+            logger.error(f"initialize() failed, error code = {err}")
+            return False, f"Initialize failed (Check if MT5 is installed): {err}"
             
         # Attempt to login
         authorized = mt5.login(login, password=password, server=server)
         if authorized:
             logger.info(f"Connected to MT5 account {login} on {server}")
-            return True
+            return True, "Success"
         else:
-            logger.error(f"Failed to connect to MT5 account {login}, error code = {mt5.last_error()}")
+            err = mt5.last_error()
+            logger.error(f"Failed to connect to MT5 account {login}, error code = {err}")
             mt5.shutdown()
-            return False
+            return False, f"Login failed (Wrong broker/server name, or terminal issues): {err}"
 
     @staticmethod
     def disconnect() -> bool:

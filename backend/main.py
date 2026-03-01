@@ -21,20 +21,6 @@ origins = [
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-class CORSFallbackMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        if request.method == "OPTIONS":
-            response = JSONResponse({})
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Methods"] = "*"
-            response.headers["Access-Control-Allow-Headers"] = "*"
-            return response
-        response = await call_next(request)
-        response.headers["Access-Control-Allow-Origin"] = "*" # Force on all responses
-        return response
-
-app.add_middleware(CORSFallbackMiddleware)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,6 +28,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class CORSFallbackMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        if request.method == "OPTIONS":
+            response = JSONResponse({})
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            return response
+        response = await call_next(request)
+        response.headers["Access-Control-Allow-Origin"] = "*" # Force on all responses
+        return response
+
+app.add_middleware(CORSFallbackMiddleware)
 
 @app.get("/")
 def read_root():
@@ -138,9 +139,9 @@ def connect_mt(request: MTConnectRequest):
     """
     Connect to MT5 terminal and return account info.
     """
-    success = MT5Service.connect(request.login, request.password, request.server)
+    success, msg = MT5Service.connect(request.login, request.password, request.server)
     if not success:
-        raise HTTPException(status_code=401, detail="Failed to connect to MT5. Check credentials or ensure terminal is running.")
+        raise HTTPException(status_code=401, detail=msg)
     
     info = MT5Service.get_account_info()
     return {"status": "success", "account": info}
