@@ -10,11 +10,23 @@ class MT5Service:
         Connect to a MetaTrader 5 account.
         Requires MT5 terminal to be installed and accessible.
         """
+        from . import config_manager
+        terminal_path = config_manager.get_api_key("MT5_TERMINAL_PATH", fallback_env=False)
+
         # Initialize MT5
-        if not mt5.initialize():
+        init_success = mt5.initialize(path=terminal_path) if terminal_path else mt5.initialize()
+        
+        if not init_success:
             err = mt5.last_error()
             logger.error(f"initialize() failed, error code = {err}")
-            return False, f"Initialize failed (Check if MT5 is installed): {err}"
+            
+            error_msg = f"Initialize failed {err}. "
+            if err and err[0] == -10005:  # IPC timeout
+                error_msg += "Please OPEN your MetaTrader 5 application BEFORE clicking connect."
+            else:
+                error_msg += "Check if MT5 is installed."
+                
+            return False, error_msg
             
         # Attempt to login
         authorized = mt5.login(login, password=password, server=server)
