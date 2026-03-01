@@ -12,7 +12,7 @@ def build():
         shutil.rmtree("dist")
         
     PyInstaller.__main__.run([
-        'main.py',
+        'gui.py',
         '--name=PulseNode',
         '--onefile',
         '--windowed', # Run invisibly in background (no console pop up for users)
@@ -29,6 +29,10 @@ def build():
         '--hidden-import=uvicorn.lifespan',
         '--hidden-import=uvicorn.lifespan.on',
         '--hidden-import=sys',
+        # MetaTrader5 implicit dependencies
+        '--hidden-import=numpy',
+        '--hidden-import=numpy.core',
+        '--hidden-import=numpy._core.multiarray',
     ])
     
     print("Build complete. Executable is in the 'dist' folder.")

@@ -193,6 +193,49 @@ export default function SettingsPage() {
                         </div>
                     </section>
 
+                    {/* Desktop Node Download Section */}
+                    <section className="bg-gradient-to-br from-indigo-900/20 to-purple-900/10 border border-indigo-500/20 rounded-3xl p-8 md:col-span-2 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
+
+                        <div className="flex flex-col md:flex-row gap-8 items-center justify-between relative z-10">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold tracking-tight text-white mb-1">Download Pulse Desktop Node</h2>
+                                        <p className="text-xs text-indigo-300/80 font-mono">v1.0.0-Beta • Windows Only</p>
+                                    </div>
+                                </div>
+                                <p className="text-sm text-gray-400 mb-4 leading-relaxed">
+                                    For maximum security, run the backend locally. The Pulse Node is a standalone executable that manages your <strong>MetaTrader 5 connection</strong>, <strong>API Keys</strong>, and <strong>Wallets</strong> directly on your PC. Your sensitive data never touches our cloud servers.
+                                </p>
+                                <ul className="text-xs text-gray-500 space-y-2 font-mono">
+                                    <li className="flex items-center gap-2"><span className="text-indigo-500">✓</span> Double-click to run (No Python required)</li>
+                                    <li className="flex items-center gap-2"><span className="text-indigo-500">✓</span> Visual GUI for real-time connection monitoring</li>
+                                    <li className="flex items-center gap-2"><span className="text-indigo-500">✓</span> Auto-binds to Localhost for web app sync</li>
+                                </ul>
+                            </div>
+
+                            <div className="w-full md:w-auto shrink-0 flex flex-col gap-3">
+                                <button
+                                    onClick={() => alert("In a production environment, this would download `PulseNode.exe` from an S3 bucket or GitHub Releases.")}
+                                    className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] transition-all flex items-center justify-center gap-3"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    Download PulseNode.exe
+                                </button>
+                                <button
+                                    onClick={() => handleSave({ ...settings, serverUrl: 'http://localhost:8000' })}
+                                    className="px-8 py-3 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl font-bold text-sm transition-all border border-white/10"
+                                >
+                                    Set Local Node as active
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
                 </div>
 
                 {/* 4. Module Visibility */}

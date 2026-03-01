@@ -202,5 +202,16 @@ def get_mt_positions():
 
 if __name__ == "__main__":
     import uvicorn
+    import sys
+    
+    # PyInstaller windowed mode sets sys.stdout/stderr to None, which breaks uvicorn's default logger
+    if sys.stdout is None:
+        class DummyWriter:
+            def write(self, *args, **kwargs): pass
+            def flush(self, *args, **kwargs): pass
+            def isatty(self): return False
+        sys.stdout = DummyWriter()
+        sys.stderr = DummyWriter()
+
     # When running as a packaged desktop script, start the server
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000, log_config=None)
